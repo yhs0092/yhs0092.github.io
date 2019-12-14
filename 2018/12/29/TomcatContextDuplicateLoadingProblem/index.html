@@ -15,7 +15,7 @@
   <meta name="description" content="">
   <meta name="author" content="yhs0092">
   <meta name="keywords" content="">
-  <title>归档 ~ 遥·海·时 的博客</title>
+  <title>记录一个Spring ApplicationContext重复加载的问题 ~ 遥·海·时 的博客</title>
 
   <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
 <link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
@@ -38,7 +38,7 @@
 
 
 <body>
-  <header style="height: 80vh;">
+  <header style="height: 70vh;">
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand"
@@ -109,6 +109,41 @@
             </span>
 
             
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期六, 十二月 29日 2018, 8:29 晚上
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    321 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      1 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
           </div>
 
           
@@ -119,74 +154,77 @@
 
   <main>
     
-      <div class="container nopadding-md">
-        <div class="py-5 z-depth-3" id="board">
-          
-          <div class="container">
-            <div class="row">
-              <div class="col-12 col-md-10 m-auto">
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <p>Spring ApplicationContext重复加载可能造成各种奇怪问题，如无法自动注入Spring Bean、Spring Bean重复加载报错等等。仔细观察启动日志通常能从Spring应用上下文加载日志中看出一点端倪。</p>
+<a id="more"></a>
+<h1 id="记录一个Spring-ApplicationContext重复加载的问题"><a href="#记录一个Spring-ApplicationContext重复加载的问题" class="headerlink" title="记录一个Spring ApplicationContext重复加载的问题"></a>记录一个Spring ApplicationContext重复加载的问题</h1><h2 id="问题现象"><a href="#问题现象" class="headerlink" title="问题现象"></a>问题现象</h2><p>有同事开发了一个demo服务，服务包含前端页面和ServiceComb开发的REST后端服务两部分。打成war包部署在Tomcat中，发现这个服务会在服务中心注册两个地址相同的实例。观察日志，发现Spring Context加载了两遍，并且Tomcat的webapps目录下存在一个与war包同名的目录和一个ROOT目录，两个目录中的内容是相同的。</p>
+<h2 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h2><p>Tomcat在启动时会将webapps目录下的war包解压到一个同名目录下，将其作为一个context加载。而在Tomcat的<code>conf/server.xml</code>文件中，又额外定义了一个Context：</p>
+<pre><code class="xml">&lt;Context path=&quot;/&quot; reloadable=&quot;true&quot; docBase=&quot;${war包的名字}&quot;/&gt;</code></pre>
+<p>于是该war包会作为root context 又被加载一次。</p>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>删掉<code>conf/server.xml</code>文件中定义的context，把拷贝到webapps目录下的war包改名为<code>ROOT.war</code>。Tomcat启动时会自动将war包解压作为root context加载。</p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
                 
-
-<div class="list-group">
-  <p class="h4">共计 7 篇文章</p>
-  <hr>
-  
-    
-      
-      <p class="h5">2019</p>
-    
-    <a href="/2019/11/13/CreateTLSCertificateByKeytoolAndOpenssl/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">使用keytool和OpenSSL自行签发TLS证书</span>
-      <span style="float: right;">11-13</span>
-    </a>
-  
-    
-      
-      <p class="h5">2018</p>
-    
-    <a href="/2018/12/29/MemoryConsumingOfJvmInDocker/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">Docker容器内部署Java微服务的内存限制问题</span>
-      <span style="float: right;">12-29</span>
-    </a>
-  
-    
-    <a href="/2018/12/29/TomcatContextDuplicateLoadingProblem/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">记录一个Spring ApplicationContext重复加载的问题</span>
-      <span style="float: right;">12-29</span>
-    </a>
-  
-    
-    <a href="/2018/12/29/WhySchemaInconsistencyCauseServiceInstanceStartUpFailure/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">详解Java-Chassis契约校验失败导致的微服务实例注册失败问题</span>
-      <span style="float: right;">12-29</span>
-    </a>
-  
-    
-    <a href="/2018/11/18/BecomingApacheServiceCombCommiter/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">开源项目没有那么遥远</span>
-      <span style="float: right;">11-18</span>
-    </a>
-  
-    
-    <a href="/2018/08/09/DecodeResponseErrorProblemLocation/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">【ServiceComb】微服务调用，应答返回时报ClassCastException问题的定位</span>
-      <span style="float: right;">08-09</span>
-    </a>
-  
-    
-    <a href="/2018/08/02/AKSKAuthenticationProblemLocation/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">【华为云微服务引擎】从代码机制看AK/SK认证问题</span>
-      <span style="float: right;">08-02</span>
-    </a>
-  
-</div>
-
-
-              </div>
-            </div>
+                  <a class="hover-with-bg" href="/categories/%E8%BD%AF%E4%BB%B6%E6%8A%80%E6%9C%AF">软件技术</a>
+                  &nbsp;
+                
+                  <a class="hover-with-bg" href="/categories/%E8%B8%A9%E5%9D%91">踩坑</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/Spring">Spring</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
           </div>
         </div>
       </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
     
   </main>
 
@@ -261,6 +299,11 @@
 
 
 
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
 
 
   <script src="/lib/smooth-scroll/smooth-scroll.min.js" ></script>
@@ -301,7 +344,7 @@
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "归档&nbsp;",
+        "记录一个Spring ApplicationContext重复加载的问题&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,

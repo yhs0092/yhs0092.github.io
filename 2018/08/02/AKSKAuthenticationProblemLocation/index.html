@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="yhs0092">
+  <meta name="keywords" content="">
+  <title>【华为云微服务引擎】从代码机制看AK/SK认证问题 ~ 遥·海·时 的博客</title>
+
+  <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
+<link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="/lib/mdbootstrap/css/mdb.min.css"  >
+<link rel="stylesheet" href="/lib/github-markdown/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/github-v2.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>遥·海·时 的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">Archives</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">Categories</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">Tags</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">About</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/default.png')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期四, 八月 2日 2018, 12:20 凌晨
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    2k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      8 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <p>排查AK/SK认证问题的常见路径和底层代码分析。</p>
+<a id="more"></a>
+<h1 id="【华为云微服务引擎】从代码机制看AK-SK认证问题"><a href="#【华为云微服务引擎】从代码机制看AK-SK认证问题" class="headerlink" title="【华为云微服务引擎】从代码机制看AK/SK认证问题"></a>【华为云微服务引擎】从代码机制看AK/SK认证问题</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>用户开发的微服务要想注册到CSE的服务中心，就需要用到AK/SK认证。由于CSEJavaSDK提供了较多的配置方式，有时候容易出现错配和漏配的情况，本文从CSEJavaSDK读取AK/SK的关键代码入手进行分析，希望能够给大家提供一点AK/SK认证失败时的定位思路。（本文基于CSEJavaSDK-2.3.30进行说明）</p>
+<h2 id="代码逻辑分析"><a href="#代码逻辑分析" class="headerlink" title="代码逻辑分析"></a>代码逻辑分析</h2><p>首先需要说明的是，AK/SK也是一个配置项，因此它可以配置在microservice.yaml文件里，可以通过-D设置系统属性来指定，也可以通过环境变量来指定（Windows的环境变量貌似可以带点号<code>.</code>，因此你可以直接在环境变量中指定cse.credentials.accessKey=ak；而Linux的环境变量不能带点，所以不能这么做）。另一方面来说，AK/SK又是一个比较特殊的配置项，因此CSEJavaSDK又提供了一个<a href="https://support.huaweicloud.com/devg-cse/cse_03_0088.html" target="_blank" rel="noopener">加密存储</a>的配置方式。无论AK/SK的来源是哪里，最终CSEJavaSDK都是在AKSKManager中完成AK/SK的读取逻辑的。</p>
+<pre><code class="java">public static Credentials getCredential() throws Exception {
+  // 读取AK/SK
+  AKSKOption option = AKSKOption.readAKSK();
+  // 中间读写缓存等等逻辑忽略……
+  // 根据cse.credentials.akskCustomCipher配置获取cipher，对AK/SK进行解密
+    AKSKCipher cipher = (AKSKCipher)CIPHERS.get(option.getAkskCustomCipher());
+  // 检查逻辑忽略...
+    char[] ak = cipher.decode(TYPE.AK, option.getAccessKey().toCharArray());
+    char[] sk = cipher.decode(TYPE.SK, option.getSecretKey().toCharArray());
+    String project = option.getProject();
+    if (project == null || project.isEmpty()) {
+      // 如果用户没有配置cse.credentials.project，就尝试从配置的服务中心地址进行解析，具体的代码忽略……
+      // 我们平常通过APIGateway连接到服务中心，例如你要连到华北区，配置的地址就是这样的 https://cse.cn-north-1.myhuaweicloud.com
+      // 可以从中截取出 cn-north-1，这个就是华北区的project
+      LOGGER.info(&quot;The application missing project infomation, so choose a nearest one [{}]&quot;, project);
+    }
+  return credentials;
+}</code></pre>
+<p>以上是AKSKManager的getCredential方法逻辑，可以看到大体的流程是读取AK/SK、根据cse.credentials.akskCustomCipher配置项获取cipher对aksk进行解密、获取cse.credentials.project配置信息。此方法返回的credentials内包含了明文的AK/SK、project信息，因此<strong><em>本地调试时确定AK/SK读取是否有问题的最快途径就是在getCredential方法末尾打断点，查看credentials包含的信息</em></strong>。</p>
+<p>而在AKSKOption.readAKSK()中读取AK/SK的关键流程如下：</p>
+<pre><code class="java">public static AKSKOption readAKSK() {
+  // 从AK/SK加密存储文件读取
+  AKSKOption option = readFromFile();
+  if (option == null) {
+    // 从配置中读取，注意：环境变量、System Property、配置文件都算在这里面
+    option = buildFromYaml();
+  }
+  return option;
+}
+private static AKSKOption readFromFile() {
+  // 忽略缓存逻辑……
+  // 先尝试从环境变量CIPHER_ROOT中读取加密存储文件的目录
+    String cipherPath = System.getenv(&quot;CIPHER_ROOT&quot;);
+    if (cipherPath == null || cipherPath.isEmpty()) {
+      // 若不存在则从/opt/CSE/etc/cipher目录中读取
+      cipherPath = &quot;/opt/CSE/etc/cipher&quot;;
+    }
+    String certFilePath = cipherPath + File.separator + &quot;certificate.yaml&quot;;
+    File certFile = new File(certFilePath);
+    if (!certFile.exists() || certFile.isDirectory()) {
+      // 文件不存在时尝试从系统属性user.dir配置的目录中读取
+      certFile = new File(System.getProperty(&quot;user.dir&quot;) + File.separator + &quot;certificate.yaml&quot;);
+      if (!certFile.exists() || certFile.isDirectory()) {
+        return null;
+      }
+    }
+    AKSKOption option = readFromFile(certFile);
+    return option;
+}</code></pre>
+<p>可以看到CSEJavaSDK优先读取加密存储的AK/SK文件，读不到才去配置中找。而AK/SK加密文件的读取路径优先级从高到低分别是CIPHER_ROOT环境变量配置的目录、/opt/CSE/etc/cipher目录、user.dir系统属性配置的目录（这个少见）。</p>
+<h2 id="常见问题分析思路"><a href="#常见问题分析思路" class="headerlink" title="常见问题分析思路"></a>常见问题分析思路</h2><p>当发生AK/SK认证失败的问题时，我们首先需要对问题有个基本的定界，即问题是出在AK/SK读取（解密）上，还是出在AK/SK的内容本身。</p>
+<p>如果是本地开发调试，那么这个问题很好确定，直接在<code>AKSKManager</code>的<code>getCredential</code>方法里打断点去看一下即可。如果是在线上部署运行的服务，那么只能看日志，凭经验来定位了。与AK/SK认证相关的日志关键词有这些：</p>
+<ul>
+<li>“read ak/sk from”：显示AK/SK的来源是哪里，”read ak/sk from security storage file.”表示服务实例从AK/SK加密存储文件中读取配置项的，”read ak/sk from microservice.yaml.”表示服务实例从配置项中读物AK/SK的（注意，这里说的是<strong><em>配置项，包含了环境变量、系统属性以及配置文件</em></strong>，不单单是指microservice.yaml文件）。</li>
+<li>“add ak/sk cipher”：加载<code>AKSKCipher</code>，cipher用于解密SK。CSEJavaSDK默认提供的cipher有default、security，default用于明文存储AK/SK的场景，security在<a href="https://support.huaweicloud.com/devg-cse/cse_03_0088.html" target="_blank" rel="noopener">AK/SK加密存储</a>场景中使用。CSEJavaSDK使用SPI机制加载cipher，如果发现日志中没有打印加载default和security的内容，那么你就需要检查一下自己依赖的jar包了。</li>
+<li>“sign request failed …… OSS_ROOT not properly set”：当cipher为<code>security</code>时，CSEJavaSDK会去CIPHER_ROOT环境变量配置的目录里读取解密密钥文件common_shared.key和root.key，如果用户忘记配置CIPHER_ROOT了，就会打印这个错误。</li>
+<li>“Cipher decode error, will use original as plain!”：SK解密失败时会打印此错误日志，常见的错误原因包括CIPHER_ROOT环境变量下没有密钥文件、程序没有权限读取密钥文件、Java没有开启高强度加密功能等。关于Java高强度加密功能，大家去网上搜一下JCE policy能找到解除限制的方法，较低版本的jdk8需要下载一个jce的jar包，高版本的直接修改jre目录下的lib/security/java.security文件配置即可，这个限制只存在于Oracle JDK中，OpenJDK没有此限制。</li>
+<li>AK/SK或project配置内容错误：当内容配置出错时，实际上AK/SK的读取加密过程并不会报错，只有等到CSEJavaSDK向CSE后端服务（sc/cc/monitor）发送请求时，才会拿到错误返回消息，错误信息包括如下类型：<pre><code>AK内容错误：
+401:Unauthorized, {&quot;errorCode&quot;:&quot;401002&quot;,&quot;errorMessage&quot;:&quot;Request unauthorized&quot;,&quot;detail&quot;:&quot;Get service token from iam proxy failed,{\&quot;error\&quot;:\&quot;get SK from AK from iam failed. error:Object Not Found - details: \&quot;}&quot;}</code></pre><pre><code>SK内容错误：
+401:Unauthorized, {&quot;errorCode&quot;:&quot;401002&quot;,&quot;errorMessage&quot;:&quot;Request unauthorized&quot;,&quot;detail&quot;:&quot;Get service token from iam proxy failed,{\&quot;error\&quot;:\&quot;validate ak sk error\&quot;}&quot;}</code></pre><pre><code>project配置错误：
+401:Unauthorized, {&quot;errorCode&quot;:&quot;401002&quot;,&quot;errorMessage&quot;:&quot;Request unauthorized&quot;,&quot;detail&quot;:&quot;Get service token from iam proxy failed,{\&quot;error\&quot;:\&quot;get project token from iam failed. error:http post failed, statuscode: 400\&quot;}&quot;}</code></pre>这些错误内容都是华为云服务的认证鉴权机制返回的，后期如果相关服务升级的话，也许返回的错误内容会有变化。但总之大家可以抓住关键的一点，就是如果前面的AK/SK加载过程都没有报错，只有连接CSE后端服务时拿到401的错误返回，那么你就需要检查一下自己的AK/SK、project是否配置对了。-D启动参数、环境变量、各个microservice.yaml文件都是需要排查的。至于project的配置，可以参考<a href="https://support.huaweicloud.com/usermanual-iam/zh-cn_topic_0079477316.html" target="_blank" rel="noopener">如何查看项目ID</a>。project和你所连接的region是相关的，比如华北区连接的APIGateway地址就是<a href="https://cse.cn-north-1.myhuaweicloud.com" target="_blank" rel="noopener">https://cse.cn-north-1.myhuaweicloud.com</a> ，project应该配置为cn-north-1。如果你不配置，CSEJavaSDK会尝试从sc地址中截取出来，但不一定能拿到正确的值，此时启动日志里面会打印提示信息，例如”The application missing project infomation, so choose a nearest one [cn-north-1]”，就是在告诉你自动选取的project是cn-north-1。</li>
+</ul>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>博主对AK/SK认证的了解大致也就是上面这些了，很多内容也只能提供一点参考和启发意义。项目实际运行的情况复杂多样，当大家遇到相关问题的时候还是需要根据上面提到的代码逻辑，结合自己服务的实际运行环境去分析，才能更好地定位问题。</p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/%E8%BD%AF%E4%BB%B6%E6%8A%80%E6%9C%AF">软件技术</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/ServiceComb">ServiceComb</a>
+                
+                  <a class="hover-with-bg" href="/tags/CSE">CSE</a>
+                
+                  <a class="hover-with-bg" href="/tags/%E5%8D%8E%E4%B8%BA%E4%BA%91">华为云</a>
+                
+                  <a class="hover-with-bg" href="/tags/microservice">microservice</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="/lib/jquery/jquery.min.js" ></script>
+<script src="/lib/popper/popper.min.js" ></script>
+<script src="/lib/bootstrap/js/bootstrap.min.js" ></script>
+<script src="/lib/mdbootstrap/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="/lib/smooth-scroll/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="/lib/prettify/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="/lib/typed/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "【华为云微服务引擎】从代码机制看AK/SK认证问题&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="/lib/anchor/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "left",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="/lib/fancybox/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>

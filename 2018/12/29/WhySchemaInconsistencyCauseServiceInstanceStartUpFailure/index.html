@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="yhs0092">
+  <meta name="keywords" content="">
+  <title>详解Java-Chassis契约校验失败导致的微服务实例注册失败问题 ~ 遥·海·时 的博客</title>
+
+  <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
+<link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="/lib/mdbootstrap/css/mdb.min.css"  >
+<link rel="stylesheet" href="/lib/github-markdown/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/github-v2.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="/lib/fancybox/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>遥·海·时 的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">Archives</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">Categories</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">Tags</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">About</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/default.png')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期六, 十二月 29日 2018, 8:29 晚上
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    1.6k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      6 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <p>一篇文章说清楚为什么ServiceComb-Java-Chassis校验服务契约的机制那么严格。</p>
+<a id="more"></a>
+<h1 id="详解Java-Chassis契约校验失败导致的微服务实例注册失败问题"><a href="#详解Java-Chassis契约校验失败导致的微服务实例注册失败问题" class="headerlink" title="详解Java-Chassis契约校验失败导致的微服务实例注册失败问题"></a>详解Java-Chassis契约校验失败导致的微服务实例注册失败问题</h1><p>相信不少同学在使用 CSEJavaSDK / ServiceComb-Java-Chassis 开发微服务的过程中都碰到过修改了服务接口后服务就无法启动的情况。控制台上会打出如下的异常栈：</p>
+<pre><code>Exception in thread &quot;main&quot; java.lang.IllegalStateException: ServiceComb init failed.
+    at org.apache.servicecomb.core.SCBEngine.init(SCBEngine.java:220)
+    at org.apache.servicecomb.core.CseApplicationListener.onApplicationEvent(CseApplicationListener.java:81)
+    at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:172)
+    at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:165)
+    at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:139)
+    at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:393)
+    at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:347)
+    at org.springframework.context.support.AbstractApplicationContext.finishRefresh(AbstractApplicationContext.java:883)
+    at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:546)
+    at org.springframework.context.support.ClassPathXmlApplicationContext.&lt;init&gt;(ClassPathXmlApplicationContext.java:139)
+    at org.springframework.context.support.ClassPathXmlApplicationContext.&lt;init&gt;(ClassPathXmlApplicationContext.java:93)
+    at org.apache.servicecomb.foundation.common.utils.BeanUtils.init(BeanUtils.java:49)
+    at org.apache.servicecomb.foundation.common.utils.BeanUtils.init(BeanUtils.java:42)
+    at microservice.demo.training21days.provider.AppMain.main(AppMain.java:9)
+Caused by: java.lang.IllegalStateException: The schema(id=[hello]) content held by this instance and the service center is different. You need to increment microservice version before deploying. Or you can configure service_description.environment=development to work in development environment and ignore this error
+    at org.apache.servicecomb.serviceregistry.task.MicroserviceRegisterTask.compareAndReRegisterSchema(MicroserviceRegisterTask.java:277)
+    at org.apache.servicecomb.serviceregistry.task.MicroserviceRegisterTask.registerSchema(MicroserviceRegisterTask.java:206)
+    at org.apache.servicecomb.serviceregistry.task.MicroserviceRegisterTask.registerSchemas(MicroserviceRegisterTask.java:170)
+    at org.apache.servicecomb.serviceregistry.task.MicroserviceRegisterTask.doRegister(MicroserviceRegisterTask.java:122)
+    at org.apache.servicecomb.serviceregistry.task.AbstractRegisterTask.doRun(AbstractRegisterTask.java:41)
+    at org.apache.servicecomb.serviceregistry.task.AbstractTask.run(AbstractTask.java:53)
+    at org.apache.servicecomb.serviceregistry.task.CompositeTask.run(CompositeTask.java:35)
+    at org.apache.servicecomb.serviceregistry.task.ServiceCenterTask.init(ServiceCenterTask.java:82)
+    at org.apache.servicecomb.serviceregistry.registry.AbstractServiceRegistry.run(AbstractServiceRegistry.java:178)
+    at org.apache.servicecomb.serviceregistry.registry.RemoteServiceRegistry.run(RemoteServiceRegistry.java:86)
+    at org.apache.servicecomb.serviceregistry.RegistryUtils.run(RegistryUtils.java:70)
+    at org.apache.servicecomb.core.SCBEngine.doInit(SCBEngine.java:255)
+    at org.apache.servicecomb.core.SCBEngine.init(SCBEngine.java:209)
+    ... 13 more</code></pre><p>其实这里抛出的异常已经告诉大家问题的原因和解决方式了。问题原因是这个服务在服务中心里注册的契约内容和这个实例实际持有的契约内容不一致（契约的id也打出来了，这里是<code>&quot;hello&quot;</code>）。至于解决方案，这里给出了两种：</p>
+<ol>
+<li>增加微服务的版本，也就是要修改<code>microservice.yaml</code>配置文件里的<code>service_description.version</code>配置项的值</li>
+<li>将环境更改为开发环境，也就是在<code>microservice.yaml</code>配置文件里加上一个配置 <code>service_description.environment=development</code></li>
+</ol>
+<p>那么这里的两种问题解决方式应该选择哪一种呢，还有其他的解决方式吗？我们还是得先从服务契约本身说起。</p>
+<p>一个 ServiceComb-Java-Chassis 框架的微服务在启动时会扫描它全部的REST接口类，并根据这些接口类生成对应的服务契约，并确保它们随着自己的服务记录一起注册到了服务中心。服务契约不仅仅是一份“接口文档”，同时它也约束着微服务的运行时行为。微服务会根据服务契约来确定如何调用其他服务，以及如何执行参数的序列化、反序列化操作等等。<br>也就是说， ServiceComb-Java-Chassis 的服务契约，不是那种大家开发完新功能后想起来要更新了就去改一下，忘记了或者没时间就不改的“接口说明文档”。它跟服务的接口有着严格的对应关系。<strong>如果契约不一样的话，那么就说明，你的服务，真的，有接口变化</strong>。</p>
+<p>说到接口变化，大家都知道这是一个比较严肃的事情了。通常一个服务的接口都应该是经过设计和评审的，不能轻易改变（跟其他服务联调过的同学对这个应该有体会吧？）。<br>在正式的环境（生产环境）下，服务接口变更发生在什么时候呢？答案是，服务版本变更的时候。抛开那些不按套路出牌的开发团队不谈，一般情况下一个服务版本应该上线哪些功能，提供哪些接口，都是应该有规划和记录的。也就是说，一个服务的每个版本的接口都是确定的，不应该出现一个版本的服务有两套不同的接口的情况。</p>
+<p>到这里，大家知道为什么你会碰到本文开头碰到的问题了吧？<br>原因很明确，就是<strong>你不应该在一个版本的微服务里给出两套不相同的接口</strong>。想想如果你的生产环境里，同一个版本的微服务混进去了一批接口不一样的服务实例（微服务架构下通常都是多实例部署服务的），那么你的系统一会儿可以正常工作，一会儿报各种参数错误、接口不存在之类的问题。这些问题的表象可能会显得很隐晦、随机或者复杂，而你在线上环境里很难排查出来。<br>为了避免将这类问题引入到线上， CSEJavaSDK / ServiceComb-Java-Chassis 采取了严格的服务契约校验策略，确保你的线上的服务一定是接口一致的。</p>
+<p>所以异常里给出的两种解决方案其实也是针对不同的场景的：</p>
+<ol>
+<li>如果你正在开发新版本的服务，接口本来就变来变去的没定下来，那么你可以把你的微服务的环境改为开发环境（<code>service_description.environment=development</code>），此时微服务框架允许你变更你的接口并更新注册到服务中心。</li>
+<li>如果是测试、生产环境，这个时候服务接口应该稳定下来了，服务契约不同通常意味着这应该是一个新版本。那么你应该给你的服务分配一个更新的版本号了。</li>
+</ol>
+<p>顺带一提，开发自测时还有一种问题解决办法，就是直接把服务中心里的旧服务记录删掉，更简单 ; )</p>
+<blockquote>
+<p>删完记得把上游调用它的服务重启一下，consumer端只加载一次provider的服务契约，之后不再动态刷新的</p>
+</blockquote>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/%E8%BD%AF%E4%BB%B6%E6%8A%80%E6%9C%AF">软件技术</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/microservice">microservice</a>
+                
+                  <a class="hover-with-bg" href="/tags/ServiceComb-Java-Chassis">ServiceComb-Java-Chassis</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="/lib/jquery/jquery.min.js" ></script>
+<script src="/lib/popper/popper.min.js" ></script>
+<script src="/lib/bootstrap/js/bootstrap.min.js" ></script>
+<script src="/lib/mdbootstrap/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="/lib/smooth-scroll/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="/lib/prettify/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="/lib/typed/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "详解Java-Chassis契约校验失败导致的微服务实例注册失败问题&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="/lib/anchor/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "left",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="/lib/fancybox/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>

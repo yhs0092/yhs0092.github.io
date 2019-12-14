@@ -70,33 +70,6 @@
   
   
   <entry>
-    <title>记录一个Spring ApplicationContext重复加载的问题</title>
-    <link href="undefined2018/12/29/TomcatContextDuplicateLoadingProblem/"/>
-    <url>2018/12/29/TomcatContextDuplicateLoadingProblem/</url>
-    
-    <content type="html"><![CDATA[<p>Spring ApplicationContext重复加载可能造成各种奇怪问题，如无法自动注入Spring Bean、Spring Bean重复加载报错等等。仔细观察启动日志通常能从Spring应用上下文加载日志中看出一点端倪。</p><a id="more"></a><h1 id="记录一个Spring-ApplicationContext重复加载的问题"><a href="#记录一个Spring-ApplicationContext重复加载的问题" class="headerlink" title="记录一个Spring ApplicationContext重复加载的问题"></a>记录一个Spring ApplicationContext重复加载的问题</h1><h2 id="问题现象"><a href="#问题现象" class="headerlink" title="问题现象"></a>问题现象</h2><p>有同事开发了一个demo服务，服务包含前端页面和ServiceComb开发的REST后端服务两部分。打成war包部署在Tomcat中，发现这个服务会在服务中心注册两个地址相同的实例。观察日志，发现Spring Context加载了两遍，并且Tomcat的webapps目录下存在一个与war包同名的目录和一个ROOT目录，两个目录中的内容是相同的。</p><h2 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h2><p>Tomcat在启动时会将webapps目录下的war包解压到一个同名目录下，将其作为一个context加载。而在Tomcat的<code>conf/server.xml</code>文件中，又额外定义了一个Context：</p><pre><code class="xml">&lt;Context path=&quot;/&quot; reloadable=&quot;true&quot; docBase=&quot;${war包的名字}&quot;/&gt;</code></pre><p>于是该war包会作为root context 又被加载一次。</p><h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>删掉<code>conf/server.xml</code>文件中定义的context，把拷贝到webapps目录下的war包改名为<code>ROOT.war</code>。Tomcat启动时会自动将war包解压作为root context加载。</p>]]></content>
-    
-    
-    <categories>
-      
-      <category>软件技术</category>
-      
-      <category>踩坑</category>
-      
-    </categories>
-    
-    
-    <tags>
-      
-      <tag>Spring</tag>
-      
-    </tags>
-    
-  </entry>
-  
-  
-  
-  <entry>
     <title>详解Java-Chassis契约校验失败导致的微服务实例注册失败问题</title>
     <link href="undefined2018/12/29/WhySchemaInconsistencyCauseServiceInstanceStartUpFailure/"/>
     <url>2018/12/29/WhySchemaInconsistencyCauseServiceInstanceStartUpFailure/</url>
@@ -116,6 +89,33 @@
       <tag>microservice</tag>
       
       <tag>ServiceComb-Java-Chassis</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>记录一个Spring ApplicationContext重复加载的问题</title>
+    <link href="undefined2018/12/29/TomcatContextDuplicateLoadingProblem/"/>
+    <url>2018/12/29/TomcatContextDuplicateLoadingProblem/</url>
+    
+    <content type="html"><![CDATA[<p>Spring ApplicationContext重复加载可能造成各种奇怪问题，如无法自动注入Spring Bean、Spring Bean重复加载报错等等。仔细观察启动日志通常能从Spring应用上下文加载日志中看出一点端倪。</p><a id="more"></a><h1 id="记录一个Spring-ApplicationContext重复加载的问题"><a href="#记录一个Spring-ApplicationContext重复加载的问题" class="headerlink" title="记录一个Spring ApplicationContext重复加载的问题"></a>记录一个Spring ApplicationContext重复加载的问题</h1><h2 id="问题现象"><a href="#问题现象" class="headerlink" title="问题现象"></a>问题现象</h2><p>有同事开发了一个demo服务，服务包含前端页面和ServiceComb开发的REST后端服务两部分。打成war包部署在Tomcat中，发现这个服务会在服务中心注册两个地址相同的实例。观察日志，发现Spring Context加载了两遍，并且Tomcat的webapps目录下存在一个与war包同名的目录和一个ROOT目录，两个目录中的内容是相同的。</p><h2 id="问题原因"><a href="#问题原因" class="headerlink" title="问题原因"></a>问题原因</h2><p>Tomcat在启动时会将webapps目录下的war包解压到一个同名目录下，将其作为一个context加载。而在Tomcat的<code>conf/server.xml</code>文件中，又额外定义了一个Context：</p><pre><code class="xml">&lt;Context path=&quot;/&quot; reloadable=&quot;true&quot; docBase=&quot;${war包的名字}&quot;/&gt;</code></pre><p>于是该war包会作为root context 又被加载一次。</p><h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>删掉<code>conf/server.xml</code>文件中定义的context，把拷贝到webapps目录下的war包改名为<code>ROOT.war</code>。Tomcat启动时会自动将war包解压作为root context加载。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>软件技术</category>
+      
+      <category>踩坑</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Spring</tag>
       
     </tags>
     

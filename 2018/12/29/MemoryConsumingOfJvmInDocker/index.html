@@ -172,15 +172,15 @@
 <h2 id="进一步的探究"><a href="#进一步的探究" class="headerlink" title="进一步的探究"></a>进一步的探究</h2><p>虽然问题已经解决，但是在好奇心的驱使下，我还是打算自己找个 demo 实际去触发一下问题，另外看看从网上搜到的解决方法到底好不好用 : )</p>
 <h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><ol>
 <li><p>创建云上工程</p>
-<p><img src="img/blog/MemoryConsumingOfJvmInDocker/create_cloud-base_project.PNG" srcset="/img/loading.gif" alt=""></p>
+<p><img src="/img/blog/MemoryConsumingOfJvmInDocker/create_cloud-base_project.PNG" srcset="/img/loading.gif" alt=""></p>
 <p>首先需要在华为云 ServiceStage 创建一个云上工程。</p>
 <p>在 ServiceStage -&gt; 应用开发 -&gt; 微服务开发 -&gt; 工程管理 -&gt; 创建云上工程中，选择“基于模板创建”，语言选择 Java， 框架选择 <code>CSE-Java (SpringMVC)</code>，部署系统选择“云容器引擎CCE”，给你的云上工程取一个名字，比如<code>test-memo-consuming</code>，最后选择存放代码的仓库，就可以完成云上工程的创建了。</p>
 <p>之后云上工程会根据你的选项自动地生成脚手架代码，上传到你指定的代码仓库中，并且为你创建一条流水线，完成代码编译、构建、打包、归档镜像包的操作，并且使用打好的 docker 镜像包在 CCE 集群中部署一个应用堆栈。</p>
 <blockquote>
 <p>创建云上工程和流水线不是本文的重点，我就不详细讲操作了 : )。同一个应用堆栈的实例可以部署多个，在这里为了实验方便就按照默认值1个来部署。</p>
 </blockquote>
-<p><img src="img/blog/MemoryConsumingOfJvmInDocker/demo_service_instance.PNG" srcset="/img/loading.gif" alt=""><br>由于云上工程已经改进了脚手架代码的模板，不会再出现内存超限的问题，所以我们现在能看到 demo 服务已经正常的跑起来，微服务实例已经注册到服务中心了。</p>
-<p><img src="img/blog/MemoryConsumingOfJvmInDocker/curl_helloworld.PNG" srcset="/img/loading.gif" alt=""><br>登录到 demo 服务所部署的容器，使用<code>curl</code>命令可以调用 demo 服务的 helloworld 接口，可以看到此时服务已经可以正常工作。</p>
+<p><img src="/img/blog/MemoryConsumingOfJvmInDocker/demo_service_instance.PNG" srcset="/img/loading.gif" alt=""><br>由于云上工程已经改进了脚手架代码的模板，不会再出现内存超限的问题，所以我们现在能看到 demo 服务已经正常的跑起来，微服务实例已经注册到服务中心了。</p>
+<p><img src="/img/blog/MemoryConsumingOfJvmInDocker/curl_helloworld.PNG" srcset="/img/loading.gif" alt=""><br>登录到 demo 服务所部署的容器，使用<code>curl</code>命令可以调用 demo 服务的 helloworld 接口，可以看到此时服务已经可以正常工作。</p>
 </li>
 <li><p>增加实验代码</p>
 <p>为了能够触发微服务实例消耗更多的内存，我在项目代码中增加了如下接口，当调用<code>/allocateMemory</code>接口时，微服务实例会不停申请内存，直到 JVM 抛出 OOM 错误或者容器内存超限被 kill 掉。</p>
@@ -200,11 +200,11 @@ public String allocateMemory() {
 }</code></pre>
 <p>此时用来打镜像包的基础镜像是<code>openjdk:8u181-jdk-alpine</code>，jar 包启动命令中加上了<code>-Xmx256m</code>参数。</p>
 <p>执行流水线，应用堆栈部署成功后，调用<code>/allocateMemory</code>接口触发微服务实例消耗内存，直到 JVM 抛出 OOM 错误，可以在 ServiceStage -&gt; 应用上线 -&gt; 应用管理中选择相应的应用，点击进入概览页面，查看应用使用内存的情况。</p>
-<p><img src="img/blog/MemoryConsumingOfJvmInDocker/deploy_normal.PNG" srcset="/img/loading.gif" alt=""><br>应用使用的内存从 800M+ 陡然下降的时间点就是我重新打包部署的时间，而之后由于调用<code>/allocateMemory</code>接口，内存占用量上升到了接近 400M，并且在这个水平稳定了下来，显示<code>-Xmx256m</code>参数发挥了预期的作用。</p>
+<p><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_normal.PNG" srcset="/img/loading.gif" alt=""><br>应用使用的内存从 800M+ 陡然下降的时间点就是我重新打包部署的时间，而之后由于调用<code>/allocateMemory</code>接口，内存占用量上升到了接近 400M，并且在这个水平稳定了下来，显示<code>-Xmx256m</code>参数发挥了预期的作用。</p>
 </li>
 </ol>
 <h3 id="复现问题"><a href="#复现问题" class="headerlink" title="复现问题"></a>复现问题</h3><p>现在将 demo 工程中的 Dockerfile 修改一下，将基础镜像改为 <code>java:8u111-jre-alpine</code>，并且删除启动命令中的<code>-Xmx256m</code>参数，将其提交为<code>noLimit_oldBase</code>分支，推送到代码仓库中。然后编辑流水线，将 source 阶段的任务所使用的代码分支改为<code>noLimit_oldBase</code>分支，保存并重新运行流水线，将新的代码打包部署到应用堆栈中。</p>
-<div align=center><img src="pic/deploy_noLimit_oldBase.PNG" srcset="/img/loading.gif" width="50%" height="50%"/></div>
+<div align=center><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_noLimit_oldBase.PNG" srcset="/img/loading.gif" width="50%" height="50%"/></div>
 在微服务实例列表中查询到新的微服务实例的 endpoint IP 后，调用`/allocateMemory`接口，观察内存情况，内存从接近 400M 突然掉下去一下，然后又上升到约 450M 的时间点就是修改代码后的微服务实例部署成功的时间点，之后内存占用量突然下跌就是因为调用`/allocateMemory`接口导致容器内存超限被 kill 掉了。
 
 <p>如果你事先使用<code>docker logs -f</code>命令查看容器日志的话，那么日志大概是这个样子的</p>
@@ -226,7 +226,7 @@ Killed</code></pre><p>可以看到<code>allocateMemory</code>方法被调用，�
 </blockquote>
 <h3 id="让-JVM-感知cgroup限制"><a href="#让-JVM-感知cgroup限制" class="headerlink" title="让 JVM 感知cgroup限制"></a>让 JVM 感知<code>cgroup</code>限制</h3><p>前文提到还有另外一种方法解决 JVM 内存超限的问题，这种方法可以让 JVM 自动感知 docker 容器的 <code>cgroup</code> 限制，从而动态的调整堆内存大小，感觉挺不错的。我们也来试一下这种方法，看看效果如何 ; )</p>
 <p>回到demo项目代码的<code>master</code>分支，将 Dockerfile 中启动命令参数的<code>-Xmx256m</code>替换为<code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>，提交为<code>useCGroupMemoryLimitForHeap</code>分支，推送到代码仓库里。再次运行流水线进行构建部署。</p>
-<div align=center><img src="pic/deploy_useCGroupMemoryLimitForHeap.PNG" srcset="/img/loading.gif" width="50%" height="50%"/></div>
+<div align=center><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_useCGroupMemoryLimitForHeap.PNG" srcset="/img/loading.gif" width="50%" height="50%"/></div>
 等 demo 服务部署成功后，再次调用`/allocateMemory`接口，容器的内存占用情况如上图所示（最右边的那一部分连续曲线），内存上升到一定程度后，JVM 抛出了 OOM 错误，没有继续申请堆内存。看来这种方式也是有效果的。
 
 <p>不过，仔细观察容器的内存占用情况，可以发现容器所使用的内存仅为不到 300M，而我们对于这个容器的内存配额限制为 512M，也就是还有 200M+ 是闲置的，并不会被 JVM 利用。这个利用率，比起上文中直接设置<code>-Xmx256m</code>的内存利用率要低 : ( 。推测是因为 JVM 并不会感知到自己是部署在一个 docker 容器里的，所以它把当前的环境当成一个物理内存只有 512M 的物理机，按照比例来限制自己的最大堆内存，另一部分就被闲置了。</p>
@@ -259,9 +259,9 @@ Killed</code></pre><p>可以看到<code>allocateMemory</code>方法被调用，�
               <span>
                 <i class="iconfont icon-tag"></i>
                 
-                  <a class="hover-with-bg" href="/tags/ServiceComb-Java-Chassis">ServiceComb-Java-Chassis</a>
-                
                   <a class="hover-with-bg" href="/tags/microservice">microservice</a>
+                
+                  <a class="hover-with-bg" href="/tags/ServiceComb-Java-Chassis">ServiceComb-Java-Chassis</a>
                 
                   <a class="hover-with-bg" href="/tags/K8S">K8S</a>
                 

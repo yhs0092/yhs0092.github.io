@@ -67,7 +67,7 @@ navbar:
   menu:  # 可自行增减，若想减去某个入口，可以将值留空
     Home: /
     Archives: /archives/
-#    Categories: /categories/
+    Categories: /categories/
     Tags: /tags/
     About: /about/
 

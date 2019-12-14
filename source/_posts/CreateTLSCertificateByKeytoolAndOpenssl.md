@@ -2,9 +2,12 @@
 title: 使用keytool和OpenSSL自行签发TLS证书
 date: 2019-11-13 09:28:48
 tags: [TLS,OpenSSL,keytool,java]
+categories:
+- 软件技术
 ---
 
-
+本文主要说明如何使用JDK自带的keytool和OpenSSL自行签发TLS证书，方便进行本地开发测试。
+<!-- more -->
 # 使用keytool和OpenSSL自行签发TLS证书
 
 > 本文适用于Java微服务场景下，自行创建CA和签发TLS证书，方便自行开发调试，不适合于生产条件。  

@@ -35,44 +35,9 @@
   
   
   <entry>
-    <title>Docker容器内部署Java微服务的内存限制问题</title>
-    <link href="undefined2018/12/29/MemoryConsumingOfJvmInDocker/"/>
-    <url>2018/12/29/MemoryConsumingOfJvmInDocker/</url>
-    
-    <content type="html"><![CDATA[<p>警惕JVM占用内存超过K8S容器内存配额限制，进而导致微服务进程被关闭的问题。</p><a id="more"></a><h1 id="Docker容器内部署Java微服务的内存限制问题"><a href="#Docker容器内部署Java微服务的内存限制问题" class="headerlink" title="Docker容器内部署Java微服务的内存限制问题"></a>Docker容器内部署Java微服务的内存限制问题</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>前两天有同事发现，通过华为云 ServiceStage 的流水线部署基于模板创建的 CSEJavaSDK demo 服务时，会在容器启动过程中报错。初步排查是由于 JVM 占用的内存超出了 docker 内存配额的上限，导致容器被 kill 掉。于是我们需要排查一下问题出在哪里，为什么以前没有这类问题，而现在却发生了。</p><h2 id="基本定位"><a href="#基本定位" class="headerlink" title="基本定位"></a>基本定位</h2><p>要确定 docker 容器内存超限问题的直接原因并不难。直接进入docker容器，执行 <code>top</code> 命令，我们发现宿主机是一台8核16G的机器，而且 docker 并不会屏蔽这些信息，也就是 JVM 会认为自己工作于一台 16G 内存的机器上。而查看 demo 服务的 Dockerfile，发现运行服务时并没有对 JVM 的内存进行任何限制，于是 JVM 会根据默认的设置来工作 —— 最大堆内存为物理内存的1/4(这里的描述并不完全准确，因为 JVM 的默认堆内存大小限制比例其实是根据物理内存有所变化的，具体内容请自行搜索资料)，而基于模板创建的 ServiceStage 流水线，在部署应用堆栈的时候会把 docker 容器的内存配额默认设置为 512M，于是容器就会在启动的时候内存超限了。至于以前没有碰到过这种问题的原因，只是因为以前没将这么高规格的 ECS 服务器用于流水线部署应用堆栈。</p><p>在查询过相关资料后，我们找到了两种问题解决方案，一个是直接在 jar 包运行命令里加上 <code>-Xmx</code> 参数来指定最大堆内存，不过这种方式只能将 JVM 堆内存限制为一个固定的值；另一个方法是在执行 jar 包时加上 <code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code> 参数，让 JVM 能够感知到docker容器所设置的 <code>cgroup</code> 限制，相应地调整自身的堆内存大小，不过这个特性是 JDK 8u131 以上的版本才具备的。</p><p>最终，我们提醒 ServiceStage 流水线的同学将 CSEJavaSDK demo 的创建模板做了改进，在 Dockerfile 中将打包的基础镜像版本由原先的 <code>java:8u111-jre-alpine</code> 升级为了 <code>openjdk:8u181-jdk-alpine</code>，并且在运行服务 jar 包的命令中加上了 <code>-Xmx256m</code> 参数。问题至此已经解决了。</p><h2 id="进一步的探究"><a href="#进一步的探究" class="headerlink" title="进一步的探究"></a>进一步的探究</h2><p>虽然问题已经解决，但是在好奇心的驱使下，我还是打算自己找个 demo 实际去触发一下问题，另外看看从网上搜到的解决方法到底好不好用 : )</p><h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><ol><li><p>创建云上工程</p><p><img src="/img/blog/MemoryConsumingOfJvmInDocker/create_cloud-base_project.PNG" srcset="/img/loading.gif" alt=""></p><p>首先需要在华为云 ServiceStage 创建一个云上工程。</p><p>在 ServiceStage -&gt; 应用开发 -&gt; 微服务开发 -&gt; 工程管理 -&gt; 创建云上工程中，选择“基于模板创建”，语言选择 Java， 框架选择 <code>CSE-Java (SpringMVC)</code>，部署系统选择“云容器引擎CCE”，给你的云上工程取一个名字，比如<code>test-memo-consuming</code>，最后选择存放代码的仓库，就可以完成云上工程的创建了。</p><p>之后云上工程会根据你的选项自动地生成脚手架代码，上传到你指定的代码仓库中，并且为你创建一条流水线，完成代码编译、构建、打包、归档镜像包的操作，并且使用打好的 docker 镜像包在 CCE 集群中部署一个应用堆栈。</p><blockquote><p>创建云上工程和流水线不是本文的重点，我就不详细讲操作了 : )。同一个应用堆栈的实例可以部署多个，在这里为了实验方便就按照默认值1个来部署。</p></blockquote><p><img src="/img/blog/MemoryConsumingOfJvmInDocker/demo_service_instance.PNG" srcset="/img/loading.gif" alt=""><br>由于云上工程已经改进了脚手架代码的模板，不会再出现内存超限的问题，所以我们现在能看到 demo 服务已经正常的跑起来，微服务实例已经注册到服务中心了。</p><p><img src="/img/blog/MemoryConsumingOfJvmInDocker/curl_helloworld.PNG" srcset="/img/loading.gif" alt=""><br>登录到 demo 服务所部署的容器，使用<code>curl</code>命令可以调用 demo 服务的 helloworld 接口，可以看到此时服务已经可以正常工作。</p></li><li><p>增加实验代码</p><p>为了能够触发微服务实例消耗更多的内存，我在项目代码中增加了如下接口，当调用<code>/allocateMemory</code>接口时，微服务实例会不停申请内存，直到 JVM 抛出 OOM 错误或者容器内存超限被 kill 掉。</p><pre><code class="java">private HashMap&lt;String, long[]&gt; cacheMap = new HashMap&lt;&gt;();@GetMapping(value = &quot;/allocateMemory&quot;)public String allocateMemory() { LOGGER.info(&quot;allocateMemory() is called&quot;); try {   for (long i = 0; true; ++i) {     cacheMap.put(&quot;key&quot; + i, new long[1024 * 1024]);   } } catch (Throwable t) {   LOGGER.info(&quot;allocateMemory() gets error&quot;, t); } return &quot;allocated&quot;;}</code></pre><p>此时用来打镜像包的基础镜像是<code>openjdk:8u181-jdk-alpine</code>，jar 包启动命令中加上了<code>-Xmx256m</code>参数。</p><p>执行流水线，应用堆栈部署成功后，调用<code>/allocateMemory</code>接口触发微服务实例消耗内存，直到 JVM 抛出 OOM 错误，可以在 ServiceStage -&gt; 应用上线 -&gt; 应用管理中选择相应的应用，点击进入概览页面，查看应用使用内存的情况。</p><p><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_normal.PNG" srcset="/img/loading.gif" alt=""><br>应用使用的内存从 800M+ 陡然下降的时间点就是我重新打包部署的时间，而之后由于调用<code>/allocateMemory</code>接口，内存占用量上升到了接近 400M，并且在这个水平稳定了下来，显示<code>-Xmx256m</code>参数发挥了预期的作用。</p></li></ol><h3 id="复现问题"><a href="#复现问题" class="headerlink" title="复现问题"></a>复现问题</h3><p>现在将 demo 工程中的 Dockerfile 修改一下，将基础镜像改为 <code>java:8u111-jre-alpine</code>，并且删除启动命令中的<code>-Xmx256m</code>参数，将其提交为<code>noLimit_oldBase</code>分支，推送到代码仓库中。然后编辑流水线，将 source 阶段的任务所使用的代码分支改为<code>noLimit_oldBase</code>分支，保存并重新运行流水线，将新的代码打包部署到应用堆栈中。</p><div align=center><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_noLimit_oldBase.PNG" srcset="/img/loading.gif" width="50%" height="50%"/></div>在微服务实例列表中查询到新的微服务实例的 endpoint IP 后，调用`/allocateMemory`接口，观察内存情况，内存从接近 400M 突然掉下去一下，然后又上升到约 450M 的时间点就是修改代码后的微服务实例部署成功的时间点，之后内存占用量突然下跌就是因为调用`/allocateMemory`接口导致容器内存超限被 kill 掉了。<p>如果你事先使用<code>docker logs -f</code>命令查看容器日志的话，那么日志大概是这个样子的</p><pre><code>2018-11-23 15:40:04,920  INFO SCBEngine:152 - receive MicroserviceInstanceRegisterTask event, check instance Id...2018-11-23 15:40:04,920  INFO SCBEngine:154 - instance registry succeeds for the first time, will send AFTER_REGISTRY event.2018-11-23 15:40:04,925  WARN VertxTLSBuilder:116 - keyStore [server.p12] file not exist, please check!2018-11-23 15:40:04,925  WARN VertxTLSBuilder:136 - trustStore [trust.jks] file not exist, please check!2018-11-23 15:40:04,928  INFO DataFactory:62 - Monitor data sender started. Configured data providers is {com.huawei.paas.cse.tcc.upload.TransactionMonitorDataProvider,com.huawei.paas.monitor.HealthMonitorDataProvider,}2018-11-23 15:40:04,929  INFO ServiceCenterTask:51 - read MicroserviceInstanceRegisterTask status is FINISHED2018-11-23 15:40:04,939  INFO TestmemoconsumingApplication:57 - Started TestmemoconsumingApplication in 34.81 seconds (JVM running for 38.752)2018-11-23 15:40:14,943  INFO AbstractServiceRegistry:258 - find instances[1] from service center success. service=default/CseMonitoring/latest, old revision=null, new revision=28475010.12018-11-23 15:40:14,943  INFO AbstractServiceRegistry:266 - service id=8b09a7085f4011e89f130255ac10470c, instance id=8b160d485f4011e89f130255ac10470c, endpoints=[rest://100.125.0.198:30109?sslEnabled=true]2018-11-23 15:40:34,937  INFO ServiceCenterTaskMonitor:39 - sc task interval changed from -1 to 302018-11-23 15:47:03,823  INFO SPIServiceUtils:76 - Found SPI service javax.ws.rs.core.Response$StatusType, count=0.2018-11-23 15:47:04,657  INFO TestmemoconsumingImpl:39 - allocateMemory() is calledKilled</code></pre><p>可以看到<code>allocateMemory</code>方法被调用，然后 JVM 还没来得及抛出 OOM 错误，整个容器就被 kill 掉了。</p><blockquote><p>这里也给大家提了一个醒：<strong>不要以为自己的服务容器能启动起来就万事大吉了</strong>，如果没有特定的限制，JVM 会在运行时继续申请堆内存，也有可能造成内存用量超过 docker 容器的配额！</p></blockquote><h3 id="让-JVM-感知cgroup限制"><a href="#让-JVM-感知cgroup限制" class="headerlink" title="让 JVM 感知cgroup限制"></a>让 JVM 感知<code>cgroup</code>限制</h3><p>前文提到还有另外一种方法解决 JVM 内存超限的问题，这种方法可以让 JVM 自动感知 docker 容器的 <code>cgroup</code> 限制，从而动态的调整堆内存大小，感觉挺不错的。我们也来试一下这种方法，看看效果如何 ; )</p><p>回到demo项目代码的<code>master</code>分支，将 Dockerfile 中启动命令参数的<code>-Xmx256m</code>替换为<code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>，提交为<code>useCGroupMemoryLimitForHeap</code>分支，推送到代码仓库里。再次运行流水线进行构建部署。</p><div align=center><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_useCGroupMemoryLimitForHeap.PNG" srcset="/img/loading.gif" width="50%" height="50%"/></div>等 demo 服务部署成功后，再次调用`/allocateMemory`接口，容器的内存占用情况如上图所示（最右边的那一部分连续曲线），内存上升到一定程度后，JVM 抛出了 OOM 错误，没有继续申请堆内存。看来这种方式也是有效果的。<p>不过，仔细观察容器的内存占用情况，可以发现容器所使用的内存仅为不到 300M，而我们对于这个容器的内存配额限制为 512M，也就是还有 200M+ 是闲置的，并不会被 JVM 利用。这个利用率，比起上文中直接设置<code>-Xmx256m</code>的内存利用率要低 : ( 。推测是因为 JVM 并不会感知到自己是部署在一个 docker 容器里的，所以它把当前的环境当成一个物理内存只有 512M 的物理机，按照比例来限制自己的最大堆内存，另一部分就被闲置了。</p><blockquote><p>如此看来，如果想要充分利用自己的服务器资源，还是得多花一点功夫，手动调整好<code>-Xmx</code>参数。</p></blockquote><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul><li><a href="https://royvanrijn.com/blog/2018/05/java-and-docker-memory-limits/" target="_blank" rel="noopener" title="Java and Docker, the limitations">Java and Docker, the limitations</a></li><li><a href="https://developers.redhat.com/blog/2017/03/14/java-inside-docker/" target="_blank" rel="noopener" title="Java inside docker: What you must know to not FAIL - RHD Blog">Java inside docker: What you must know to not FAIL</a></li></ul>]]></content>
-    
-    
-    <categories>
-      
-      <category>软件技术</category>
-      
-      <category>踩坑</category>
-      
-    </categories>
-    
-    
-    <tags>
-      
-      <tag>ServiceComb-Java-Chassis</tag>
-      
-      <tag>microservice</tag>
-      
-      <tag>K8S</tag>
-      
-      <tag>docker</tag>
-      
-      <tag>JVM</tag>
-      
-    </tags>
-    
-  </entry>
-  
-  
-  
-  <entry>
     <title>详解Java-Chassis契约校验失败导致的微服务实例注册失败问题</title>
-    <link href="undefined2018/12/29/WhySchemaInconsistencyCauseServiceInstanceStartUpFailure/"/>
-    <url>2018/12/29/WhySchemaInconsistencyCauseServiceInstanceStartUpFailure/</url>
+    <link href="undefined2019/03/22/WhySchemaInconsistencyCauseServiceInstanceStartUpFailure/"/>
+    <url>2019/03/22/WhySchemaInconsistencyCauseServiceInstanceStartUpFailure/</url>
     
     <content type="html"><![CDATA[<p>一篇文章说清楚为什么ServiceComb-Java-Chassis校验服务契约的机制那么严格。</p><a id="more"></a><h1 id="详解Java-Chassis契约校验失败导致的微服务实例注册失败问题"><a href="#详解Java-Chassis契约校验失败导致的微服务实例注册失败问题" class="headerlink" title="详解Java-Chassis契约校验失败导致的微服务实例注册失败问题"></a>详解Java-Chassis契约校验失败导致的微服务实例注册失败问题</h1><p>相信不少同学在使用 CSEJavaSDK / ServiceComb-Java-Chassis 开发微服务的过程中都碰到过修改了服务接口后服务就无法启动的情况。控制台上会打出如下的异常栈：</p><pre><code>Exception in thread &quot;main&quot; java.lang.IllegalStateException: ServiceComb init failed.    at org.apache.servicecomb.core.SCBEngine.init(SCBEngine.java:220)    at org.apache.servicecomb.core.CseApplicationListener.onApplicationEvent(CseApplicationListener.java:81)    at org.springframework.context.event.SimpleApplicationEventMulticaster.doInvokeListener(SimpleApplicationEventMulticaster.java:172)    at org.springframework.context.event.SimpleApplicationEventMulticaster.invokeListener(SimpleApplicationEventMulticaster.java:165)    at org.springframework.context.event.SimpleApplicationEventMulticaster.multicastEvent(SimpleApplicationEventMulticaster.java:139)    at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:393)    at org.springframework.context.support.AbstractApplicationContext.publishEvent(AbstractApplicationContext.java:347)    at org.springframework.context.support.AbstractApplicationContext.finishRefresh(AbstractApplicationContext.java:883)    at org.springframework.context.support.AbstractApplicationContext.refresh(AbstractApplicationContext.java:546)    at org.springframework.context.support.ClassPathXmlApplicationContext.&lt;init&gt;(ClassPathXmlApplicationContext.java:139)    at org.springframework.context.support.ClassPathXmlApplicationContext.&lt;init&gt;(ClassPathXmlApplicationContext.java:93)    at org.apache.servicecomb.foundation.common.utils.BeanUtils.init(BeanUtils.java:49)    at org.apache.servicecomb.foundation.common.utils.BeanUtils.init(BeanUtils.java:42)    at microservice.demo.training21days.provider.AppMain.main(AppMain.java:9)Caused by: java.lang.IllegalStateException: The schema(id=[hello]) content held by this instance and the service center is different. You need to increment microservice version before deploying. Or you can configure service_description.environment=development to work in development environment and ignore this error    at org.apache.servicecomb.serviceregistry.task.MicroserviceRegisterTask.compareAndReRegisterSchema(MicroserviceRegisterTask.java:277)    at org.apache.servicecomb.serviceregistry.task.MicroserviceRegisterTask.registerSchema(MicroserviceRegisterTask.java:206)    at org.apache.servicecomb.serviceregistry.task.MicroserviceRegisterTask.registerSchemas(MicroserviceRegisterTask.java:170)    at org.apache.servicecomb.serviceregistry.task.MicroserviceRegisterTask.doRegister(MicroserviceRegisterTask.java:122)    at org.apache.servicecomb.serviceregistry.task.AbstractRegisterTask.doRun(AbstractRegisterTask.java:41)    at org.apache.servicecomb.serviceregistry.task.AbstractTask.run(AbstractTask.java:53)    at org.apache.servicecomb.serviceregistry.task.CompositeTask.run(CompositeTask.java:35)    at org.apache.servicecomb.serviceregistry.task.ServiceCenterTask.init(ServiceCenterTask.java:82)    at org.apache.servicecomb.serviceregistry.registry.AbstractServiceRegistry.run(AbstractServiceRegistry.java:178)    at org.apache.servicecomb.serviceregistry.registry.RemoteServiceRegistry.run(RemoteServiceRegistry.java:86)    at org.apache.servicecomb.serviceregistry.RegistryUtils.run(RegistryUtils.java:70)    at org.apache.servicecomb.core.SCBEngine.doInit(SCBEngine.java:255)    at org.apache.servicecomb.core.SCBEngine.init(SCBEngine.java:209)    ... 13 more</code></pre><p>其实这里抛出的异常已经告诉大家问题的原因和解决方式了。问题原因是这个服务在服务中心里注册的契约内容和这个实例实际持有的契约内容不一致（契约的id也打出来了，这里是<code>&quot;hello&quot;</code>）。至于解决方案，这里给出了两种：</p><ol><li>增加微服务的版本，也就是要修改<code>microservice.yaml</code>配置文件里的<code>service_description.version</code>配置项的值</li><li>将环境更改为开发环境，也就是在<code>microservice.yaml</code>配置文件里加上一个配置 <code>service_description.environment=development</code></li></ol><p>那么这里的两种问题解决方式应该选择哪一种呢，还有其他的解决方式吗？我们还是得先从服务契约本身说起。</p><p>一个 ServiceComb-Java-Chassis 框架的微服务在启动时会扫描它全部的REST接口类，并根据这些接口类生成对应的服务契约，并确保它们随着自己的服务记录一起注册到了服务中心。服务契约不仅仅是一份“接口文档”，同时它也约束着微服务的运行时行为。微服务会根据服务契约来确定如何调用其他服务，以及如何执行参数的序列化、反序列化操作等等。<br>也就是说， ServiceComb-Java-Chassis 的服务契约，不是那种大家开发完新功能后想起来要更新了就去改一下，忘记了或者没时间就不改的“接口说明文档”。它跟服务的接口有着严格的对应关系。<strong>如果契约不一样的话，那么就说明，你的服务，真的，有接口变化</strong>。</p><p>说到接口变化，大家都知道这是一个比较严肃的事情了。通常一个服务的接口都应该是经过设计和评审的，不能轻易改变（跟其他服务联调过的同学对这个应该有体会吧？）。<br>在正式的环境（生产环境）下，服务接口变更发生在什么时候呢？答案是，服务版本变更的时候。抛开那些不按套路出牌的开发团队不谈，一般情况下一个服务版本应该上线哪些功能，提供哪些接口，都是应该有规划和记录的。也就是说，一个服务的每个版本的接口都是确定的，不应该出现一个版本的服务有两套不同的接口的情况。</p><p>到这里，大家知道为什么你会碰到本文开头碰到的问题了吧？<br>原因很明确，就是<strong>你不应该在一个版本的微服务里给出两套不相同的接口</strong>。想想如果你的生产环境里，同一个版本的微服务混进去了一批接口不一样的服务实例（微服务架构下通常都是多实例部署服务的），那么你的系统一会儿可以正常工作，一会儿报各种参数错误、接口不存在之类的问题。这些问题的表象可能会显得很隐晦、随机或者复杂，而你在线上环境里很难排查出来。<br>为了避免将这类问题引入到线上， CSEJavaSDK / ServiceComb-Java-Chassis 采取了严格的服务契约校验策略，确保你的线上的服务一定是接口一致的。</p><p>所以异常里给出的两种解决方案其实也是针对不同的场景的：</p><ol><li>如果你正在开发新版本的服务，接口本来就变来变去的没定下来，那么你可以把你的微服务的环境改为开发环境（<code>service_description.environment=development</code>），此时微服务框架允许你变更你的接口并更新注册到服务中心。</li><li>如果是测试、生产环境，这个时候服务接口应该稳定下来了，服务契约不同通常意味着这应该是一个新版本。那么你应该给你的服务分配一个更新的版本号了。</li></ol><p>顺带一提，开发自测时还有一种问题解决办法，就是直接把服务中心里的旧服务记录删掉，更简单 ; )</p><blockquote><p>删完记得把上游调用它的服务重启一下，consumer端只加载一次provider的服务契约，之后不再动态刷新的</p></blockquote>]]></content>
     
@@ -86,9 +51,9 @@
     
     <tags>
       
-      <tag>ServiceComb-Java-Chassis</tag>
-      
       <tag>microservice</tag>
+      
+      <tag>ServiceComb-Java-Chassis</tag>
       
     </tags>
     
@@ -116,6 +81,41 @@
     <tags>
       
       <tag>Spring</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>Docker容器内部署Java微服务的内存限制问题</title>
+    <link href="undefined2018/11/24/MemoryConsumingOfJvmInDocker/"/>
+    <url>2018/11/24/MemoryConsumingOfJvmInDocker/</url>
+    
+    <content type="html"><![CDATA[<p>警惕JVM占用内存超过K8S容器内存配额限制，进而导致微服务进程被关闭的问题。</p><a id="more"></a><h1 id="Docker容器内部署Java微服务的内存限制问题"><a href="#Docker容器内部署Java微服务的内存限制问题" class="headerlink" title="Docker容器内部署Java微服务的内存限制问题"></a>Docker容器内部署Java微服务的内存限制问题</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>前两天有同事发现，通过华为云 ServiceStage 的流水线部署基于模板创建的 CSEJavaSDK demo 服务时，会在容器启动过程中报错。初步排查是由于 JVM 占用的内存超出了 docker 内存配额的上限，导致容器被 kill 掉。于是我们需要排查一下问题出在哪里，为什么以前没有这类问题，而现在却发生了。</p><h2 id="基本定位"><a href="#基本定位" class="headerlink" title="基本定位"></a>基本定位</h2><p>要确定 docker 容器内存超限问题的直接原因并不难。直接进入docker容器，执行 <code>top</code> 命令，我们发现宿主机是一台8核16G的机器，而且 docker 并不会屏蔽这些信息，也就是 JVM 会认为自己工作于一台 16G 内存的机器上。而查看 demo 服务的 Dockerfile，发现运行服务时并没有对 JVM 的内存进行任何限制，于是 JVM 会根据默认的设置来工作 —— 最大堆内存为物理内存的1/4(这里的描述并不完全准确，因为 JVM 的默认堆内存大小限制比例其实是根据物理内存有所变化的，具体内容请自行搜索资料)，而基于模板创建的 ServiceStage 流水线，在部署应用堆栈的时候会把 docker 容器的内存配额默认设置为 512M，于是容器就会在启动的时候内存超限了。至于以前没有碰到过这种问题的原因，只是因为以前没将这么高规格的 ECS 服务器用于流水线部署应用堆栈。</p><p>在查询过相关资料后，我们找到了两种问题解决方案，一个是直接在 jar 包运行命令里加上 <code>-Xmx</code> 参数来指定最大堆内存，不过这种方式只能将 JVM 堆内存限制为一个固定的值；另一个方法是在执行 jar 包时加上 <code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code> 参数，让 JVM 能够感知到docker容器所设置的 <code>cgroup</code> 限制，相应地调整自身的堆内存大小，不过这个特性是 JDK 8u131 以上的版本才具备的。</p><p>最终，我们提醒 ServiceStage 流水线的同学将 CSEJavaSDK demo 的创建模板做了改进，在 Dockerfile 中将打包的基础镜像版本由原先的 <code>java:8u111-jre-alpine</code> 升级为了 <code>openjdk:8u181-jdk-alpine</code>，并且在运行服务 jar 包的命令中加上了 <code>-Xmx256m</code> 参数。问题至此已经解决了。</p><h2 id="进一步的探究"><a href="#进一步的探究" class="headerlink" title="进一步的探究"></a>进一步的探究</h2><p>虽然问题已经解决，但是在好奇心的驱使下，我还是打算自己找个 demo 实际去触发一下问题，另外看看从网上搜到的解决方法到底好不好用 : )</p><h3 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h3><ol><li><p>创建云上工程</p><p><img src="/img/blog/MemoryConsumingOfJvmInDocker/create_cloud-base_project.PNG" srcset="/img/loading.gif" alt=""></p><p>首先需要在华为云 ServiceStage 创建一个云上工程。</p><p>在 ServiceStage -&gt; 应用开发 -&gt; 微服务开发 -&gt; 工程管理 -&gt; 创建云上工程中，选择“基于模板创建”，语言选择 Java， 框架选择 <code>CSE-Java (SpringMVC)</code>，部署系统选择“云容器引擎CCE”，给你的云上工程取一个名字，比如<code>test-memo-consuming</code>，最后选择存放代码的仓库，就可以完成云上工程的创建了。</p><p>之后云上工程会根据你的选项自动地生成脚手架代码，上传到你指定的代码仓库中，并且为你创建一条流水线，完成代码编译、构建、打包、归档镜像包的操作，并且使用打好的 docker 镜像包在 CCE 集群中部署一个应用堆栈。</p><blockquote><p>创建云上工程和流水线不是本文的重点，我就不详细讲操作了 : )。同一个应用堆栈的实例可以部署多个，在这里为了实验方便就按照默认值1个来部署。</p></blockquote><p><img src="/img/blog/MemoryConsumingOfJvmInDocker/demo_service_instance.PNG" srcset="/img/loading.gif" alt=""><br>由于云上工程已经改进了脚手架代码的模板，不会再出现内存超限的问题，所以我们现在能看到 demo 服务已经正常的跑起来，微服务实例已经注册到服务中心了。</p><p><img src="/img/blog/MemoryConsumingOfJvmInDocker/curl_helloworld.PNG" srcset="/img/loading.gif" alt=""><br>登录到 demo 服务所部署的容器，使用<code>curl</code>命令可以调用 demo 服务的 helloworld 接口，可以看到此时服务已经可以正常工作。</p></li><li><p>增加实验代码</p><p>为了能够触发微服务实例消耗更多的内存，我在项目代码中增加了如下接口，当调用<code>/allocateMemory</code>接口时，微服务实例会不停申请内存，直到 JVM 抛出 OOM 错误或者容器内存超限被 kill 掉。</p><pre><code class="java">private HashMap&lt;String, long[]&gt; cacheMap = new HashMap&lt;&gt;();@GetMapping(value = &quot;/allocateMemory&quot;)public String allocateMemory() { LOGGER.info(&quot;allocateMemory() is called&quot;); try {   for (long i = 0; true; ++i) {     cacheMap.put(&quot;key&quot; + i, new long[1024 * 1024]);   } } catch (Throwable t) {   LOGGER.info(&quot;allocateMemory() gets error&quot;, t); } return &quot;allocated&quot;;}</code></pre><p>此时用来打镜像包的基础镜像是<code>openjdk:8u181-jdk-alpine</code>，jar 包启动命令中加上了<code>-Xmx256m</code>参数。</p><p>执行流水线，应用堆栈部署成功后，调用<code>/allocateMemory</code>接口触发微服务实例消耗内存，直到 JVM 抛出 OOM 错误，可以在 ServiceStage -&gt; 应用上线 -&gt; 应用管理中选择相应的应用，点击进入概览页面，查看应用使用内存的情况。</p><p><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_normal.PNG" srcset="/img/loading.gif" alt=""><br>应用使用的内存从 800M+ 陡然下降的时间点就是我重新打包部署的时间，而之后由于调用<code>/allocateMemory</code>接口，内存占用量上升到了接近 400M，并且在这个水平稳定了下来，显示<code>-Xmx256m</code>参数发挥了预期的作用。</p></li></ol><h3 id="复现问题"><a href="#复现问题" class="headerlink" title="复现问题"></a>复现问题</h3><p>现在将 demo 工程中的 Dockerfile 修改一下，将基础镜像改为 <code>java:8u111-jre-alpine</code>，并且删除启动命令中的<code>-Xmx256m</code>参数，将其提交为<code>noLimit_oldBase</code>分支，推送到代码仓库中。然后编辑流水线，将 source 阶段的任务所使用的代码分支改为<code>noLimit_oldBase</code>分支，保存并重新运行流水线，将新的代码打包部署到应用堆栈中。</p><div align=center><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_noLimit_oldBase.PNG" srcset="/img/loading.gif" width="50%" height="50%"/></div>在微服务实例列表中查询到新的微服务实例的 endpoint IP 后，调用`/allocateMemory`接口，观察内存情况，内存从接近 400M 突然掉下去一下，然后又上升到约 450M 的时间点就是修改代码后的微服务实例部署成功的时间点，之后内存占用量突然下跌就是因为调用`/allocateMemory`接口导致容器内存超限被 kill 掉了。<p>如果你事先使用<code>docker logs -f</code>命令查看容器日志的话，那么日志大概是这个样子的</p><pre><code>2018-11-23 15:40:04,920  INFO SCBEngine:152 - receive MicroserviceInstanceRegisterTask event, check instance Id...2018-11-23 15:40:04,920  INFO SCBEngine:154 - instance registry succeeds for the first time, will send AFTER_REGISTRY event.2018-11-23 15:40:04,925  WARN VertxTLSBuilder:116 - keyStore [server.p12] file not exist, please check!2018-11-23 15:40:04,925  WARN VertxTLSBuilder:136 - trustStore [trust.jks] file not exist, please check!2018-11-23 15:40:04,928  INFO DataFactory:62 - Monitor data sender started. Configured data providers is {com.huawei.paas.cse.tcc.upload.TransactionMonitorDataProvider,com.huawei.paas.monitor.HealthMonitorDataProvider,}2018-11-23 15:40:04,929  INFO ServiceCenterTask:51 - read MicroserviceInstanceRegisterTask status is FINISHED2018-11-23 15:40:04,939  INFO TestmemoconsumingApplication:57 - Started TestmemoconsumingApplication in 34.81 seconds (JVM running for 38.752)2018-11-23 15:40:14,943  INFO AbstractServiceRegistry:258 - find instances[1] from service center success. service=default/CseMonitoring/latest, old revision=null, new revision=28475010.12018-11-23 15:40:14,943  INFO AbstractServiceRegistry:266 - service id=8b09a7085f4011e89f130255ac10470c, instance id=8b160d485f4011e89f130255ac10470c, endpoints=[rest://100.125.0.198:30109?sslEnabled=true]2018-11-23 15:40:34,937  INFO ServiceCenterTaskMonitor:39 - sc task interval changed from -1 to 302018-11-23 15:47:03,823  INFO SPIServiceUtils:76 - Found SPI service javax.ws.rs.core.Response$StatusType, count=0.2018-11-23 15:47:04,657  INFO TestmemoconsumingImpl:39 - allocateMemory() is calledKilled</code></pre><p>可以看到<code>allocateMemory</code>方法被调用，然后 JVM 还没来得及抛出 OOM 错误，整个容器就被 kill 掉了。</p><blockquote><p>这里也给大家提了一个醒：<strong>不要以为自己的服务容器能启动起来就万事大吉了</strong>，如果没有特定的限制，JVM 会在运行时继续申请堆内存，也有可能造成内存用量超过 docker 容器的配额！</p></blockquote><h3 id="让-JVM-感知cgroup限制"><a href="#让-JVM-感知cgroup限制" class="headerlink" title="让 JVM 感知cgroup限制"></a>让 JVM 感知<code>cgroup</code>限制</h3><p>前文提到还有另外一种方法解决 JVM 内存超限的问题，这种方法可以让 JVM 自动感知 docker 容器的 <code>cgroup</code> 限制，从而动态的调整堆内存大小，感觉挺不错的。我们也来试一下这种方法，看看效果如何 ; )</p><p>回到demo项目代码的<code>master</code>分支，将 Dockerfile 中启动命令参数的<code>-Xmx256m</code>替换为<code>-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap</code>，提交为<code>useCGroupMemoryLimitForHeap</code>分支，推送到代码仓库里。再次运行流水线进行构建部署。</p><div align=center><img src="/img/blog/MemoryConsumingOfJvmInDocker/deploy_useCGroupMemoryLimitForHeap.PNG" srcset="/img/loading.gif" width="50%" height="50%"/></div>等 demo 服务部署成功后，再次调用`/allocateMemory`接口，容器的内存占用情况如上图所示（最右边的那一部分连续曲线），内存上升到一定程度后，JVM 抛出了 OOM 错误，没有继续申请堆内存。看来这种方式也是有效果的。<p>不过，仔细观察容器的内存占用情况，可以发现容器所使用的内存仅为不到 300M，而我们对于这个容器的内存配额限制为 512M，也就是还有 200M+ 是闲置的，并不会被 JVM 利用。这个利用率，比起上文中直接设置<code>-Xmx256m</code>的内存利用率要低 : ( 。推测是因为 JVM 并不会感知到自己是部署在一个 docker 容器里的，所以它把当前的环境当成一个物理内存只有 512M 的物理机，按照比例来限制自己的最大堆内存，另一部分就被闲置了。</p><blockquote><p>如此看来，如果想要充分利用自己的服务器资源，还是得多花一点功夫，手动调整好<code>-Xmx</code>参数。</p></blockquote><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul><li><a href="https://royvanrijn.com/blog/2018/05/java-and-docker-memory-limits/" target="_blank" rel="noopener" title="Java and Docker, the limitations">Java and Docker, the limitations</a></li><li><a href="https://developers.redhat.com/blog/2017/03/14/java-inside-docker/" target="_blank" rel="noopener" title="Java inside docker: What you must know to not FAIL - RHD Blog">Java inside docker: What you must know to not FAIL</a></li></ul>]]></content>
+    
+    
+    <categories>
+      
+      <category>软件技术</category>
+      
+      <category>踩坑</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>microservice</tag>
+      
+      <tag>ServiceComb-Java-Chassis</tag>
+      
+      <tag>K8S</tag>
+      
+      <tag>docker</tag>
+      
+      <tag>JVM</tag>
       
     </tags>
     
@@ -169,9 +169,9 @@
     
     <tags>
       
-      <tag>ServiceComb-Java-Chassis</tag>
-      
       <tag>microservice</tag>
+      
+      <tag>ServiceComb-Java-Chassis</tag>
       
     </tags>
     
@@ -196,13 +196,13 @@
     
     <tags>
       
-      <tag>microservice</tag>
-      
       <tag>ServiceComb</tag>
       
       <tag>CSE</tag>
       
       <tag>华为云</tag>
+      
+      <tag>microservice</tag>
       
     </tags>
     

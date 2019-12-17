@@ -15,7 +15,7 @@
   <meta name="description" content="">
   <meta name="author" content="yhs0092">
   <meta name="keywords" content="">
-  <title>归档 ~ 遥·海·时 的博客</title>
+  <title>【转载】CSEJavaSDK重试和隔离如何判断错误？ ~ 遥·海·时 的博客</title>
 
   <link rel="stylesheet" href="/lib/font-awesome/css/all.min.css"  >
 <link rel="stylesheet" href="/lib/bootstrap/css/bootstrap.min.css"  >
@@ -38,7 +38,7 @@
 
 
 <body>
-  <header style="height: 80vh;">
+  <header style="height: 70vh;">
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand"
@@ -98,7 +98,7 @@
 </nav>
 
     <div class="view intro-2" id="background"
-         style="background: url('/img/default-banner.jpg')no-repeat center center;
+         style="background: url('http://ppe.oss-cn-shenzhen.aliyuncs.com/collections/176/3/thumb.jpg')no-repeat center center;
            background-size: cover;
            background-attachment: fixed;">
       <div class="full-bg-img">
@@ -108,6 +108,41 @@
               
             </span>
 
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期二, 十二月 17日 2019, 9:45 晚上
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    380 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      1 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
             
           </div>
 
@@ -119,41 +154,97 @@
 
   <main>
     
-      <div class="container nopadding-md">
-        <div class="py-5 z-depth-3" id="board">
-          
-          <div class="container">
-            <div class="row">
-              <div class="col-12 col-md-10 m-auto">
-                
-
-<div class="list-group">
-  <p class="h4">共计 8 篇文章</p>
-  <hr>
-  
-    
       
-      <p class="h5">2018</p>
-    
-    <a href="/2018/11/24/MemoryConsumingOfJvmInDocker/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">Docker容器内部署Java微服务的内存限制问题</span>
-      <span style="float: right;">11-24</span>
-    </a>
-  
-    
-    <a href="/2018/11/18/BecomingApacheServiceCombCommiter/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">开源项目没有那么遥远</span>
-      <span style="float: right;">11-18</span>
-    </a>
-  
-</div>
 
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <p>mark一篇CSEJavaSDK熔断、隔离判断逻辑的帖子，同样适用于ServiceComb-Java-Chassis。</p>
+<p>原文链接： <a href="https://bbs.huaweicloud.com/forum/thread-12790-1-1.html" target="_blank" rel="noopener">https://bbs.huaweicloud.com/forum/thread-12790-1-1.html</a></p>
+<a id="more"></a>
 
-              </div>
-            </div>
+<h1 id="技术交流-CSE重试和隔离如何判断错误？"><a href="#技术交流-CSE重试和隔离如何判断错误？" class="headerlink" title="[技术交流]CSE重试和隔离如何判断错误？"></a>[技术交流]CSE重试和隔离如何判断错误？</h1><blockquote>
+<p>简单的描述：</p>
+<ol>
+<li><p>网络错误 + 503错误码等情况可以触发重试。</p>
+</li>
+<li><p>网络错误 + 503错误码 + 超时等错误可以触发隔离。</p>
+</li>
+</ol>
+</blockquote>
+<p>细节内容可以参考代码：</p>
+<h2 id="负载均衡模块能力"><a href="#负载均衡模块能力" class="headerlink" title="负载均衡模块能力"></a>负载均衡模块能力</h2><p>LB模块具备请求重试和实例隔离能力。</p>
+<ul>
+<li>请求重试的条件参考<code>org.apache.servicecomb.loadbalance.DefaultRetryExtensionsFactory</code></li>
+<li>实例隔离的条件参考<code>org.apache.servicecomb.loadbalance.LoadbalanceHandler#isFailedResponse</code></li>
+<li>实例隔离状态恢复的逻辑参考<code>org.apache.servicecomb.loadbalance.filter.IsolationDiscoveryFilter#allowVisit</code></li>
+<li>Java-Chassis定期ping机制会在某实例近期没有被调用时定时去检查其状态，该检查如果失败会产生和调用失败一样的错误计数，但是检查成功不会触发实例隔离恢复，相关逻辑在<code>org.apache.servicecomb.loadbalance.ServiceCombLoadBalancerStats#timer</code>的定时任务中。</li>
+</ul>
+<h2 id="熔断隔离模块能力"><a href="#熔断隔离模块能力" class="headerlink" title="熔断隔离模块能力"></a>熔断隔离模块能力</h2><p>CSE还提供了bizkeeper模块，这个模块集成了Hystrix的隔离仓等能力，这个隔离能力是针对微服务或者接口级别的，在实际业务系统中，发挥作用比较少。 这个模块也有判读错误条件：</p>
+<ul>
+<li>consumer: 490异常。 比如网络操作、超时等。 参考<code>org.apache.servicecomb.bizkeeper.ConsumerBizkeeperCommand#isFailedResponse</code></li>
+<li>provider: 590异常。比如业务处理抛出的未知RuntimeException等。 参考<code>org.apache.servicecomb.bizkeeper.ProviderBizkeeperCommand#isFailedResponse</code></li>
+</ul>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/%E8%BD%AF%E4%BB%B6%E6%8A%80%E6%9C%AF">软件技术</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/CSE">CSE</a>
+                
+                  <a class="hover-with-bg" href="/tags/microservice">microservice</a>
+                
+                  <a class="hover-with-bg" href="/tags/ServiceComb-Java-Chassis">ServiceComb-Java-Chassis</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
           </div>
         </div>
       </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
     
   </main>
 
@@ -228,6 +319,11 @@
 
 
 
+  
+    <script src="/lib/tocbot/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
 
 
   <script src="/lib/smooth-scroll/smooth-scroll.min.js" ></script>
@@ -268,7 +364,7 @@
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "归档&nbsp;",
+        "【转载】CSEJavaSDK重试和隔离如何判断错误？&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,

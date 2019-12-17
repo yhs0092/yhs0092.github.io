@@ -1,6 +1,6 @@
 ---
 title: 详解Java-Chassis契约校验失败导致的微服务实例注册失败问题
-date: 2018-12-29 20:29:31
+date: 2019-3-22 23:53:36
 tags: [ServiceComb-Java-Chassis, microservice]
 categories:
 - 软件技术

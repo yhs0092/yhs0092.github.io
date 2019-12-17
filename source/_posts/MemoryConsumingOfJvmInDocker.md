@@ -1,6 +1,6 @@
 ---
 title: Docker容器内部署Java微服务的内存限制问题
-date: 2018-12-29 20:29:31
+date: 2018-11-24 10:42:25
 tags: [ServiceComb-Java-Chassis, K8S, microservice, docker, JVM]
 categories:
 - 软件技术

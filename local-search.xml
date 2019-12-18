@@ -20,11 +20,11 @@
     
     <tags>
       
-      <tag>ServiceComb-Java-Chassis</tag>
+      <tag>CSE</tag>
       
       <tag>microservice</tag>
       
-      <tag>CSE</tag>
+      <tag>ServiceComb-Java-Chassis</tag>
       
     </tags>
     
@@ -80,9 +80,9 @@
     
     <tags>
       
-      <tag>ServiceComb-Java-Chassis</tag>
-      
       <tag>microservice</tag>
+      
+      <tag>ServiceComb-Java-Chassis</tag>
       
     </tags>
     
@@ -136,9 +136,9 @@
     
     <tags>
       
-      <tag>ServiceComb-Java-Chassis</tag>
-      
       <tag>microservice</tag>
+      
+      <tag>ServiceComb-Java-Chassis</tag>
       
       <tag>K8S</tag>
       
@@ -198,9 +198,9 @@
     
     <tags>
       
-      <tag>ServiceComb-Java-Chassis</tag>
-      
       <tag>microservice</tag>
+      
+      <tag>ServiceComb-Java-Chassis</tag>
       
     </tags>
     
@@ -225,13 +225,13 @@
     
     <tags>
       
-      <tag>microservice</tag>
-      
       <tag>ServiceComb</tag>
       
       <tag>CSE</tag>
       
       <tag>华为云</tag>
+      
+      <tag>microservice</tag>
       
     </tags>
     

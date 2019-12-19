@@ -170,13 +170,11 @@
 <h1 id="技术交流-CSE重试和隔离如何判断错误？"><a href="#技术交流-CSE重试和隔离如何判断错误？" class="headerlink" title="[技术交流]CSE重试和隔离如何判断错误？"></a>[技术交流]CSE重试和隔离如何判断错误？</h1><blockquote>
 <p>简单的描述：</p>
 <ol>
-<li><p>网络错误 + 503错误码等情况可以触发重试。</p>
-</li>
-<li><p>网络错误 + 503错误码 + 超时等错误可以触发隔离。</p>
-</li>
+<li>网络错误 + 503错误码等情况可以触发重试。</li>
+<li>网络错误 + 503错误码 + 超时等错误可以触发隔离。</li>
 </ol>
+<p>细节内容可以参考代码。</p>
 </blockquote>
-<p>细节内容可以参考代码：</p>
 <h2 id="负载均衡模块能力"><a href="#负载均衡模块能力" class="headerlink" title="负载均衡模块能力"></a>负载均衡模块能力</h2><p>LB模块具备请求重试和实例隔离能力。</p>
 <ul>
 <li>请求重试的条件参考<code>org.apache.servicecomb.loadbalance.DefaultRetryExtensionsFactory</code></li>
@@ -186,7 +184,7 @@
 </ul>
 <h2 id="熔断隔离模块能力"><a href="#熔断隔离模块能力" class="headerlink" title="熔断隔离模块能力"></a>熔断隔离模块能力</h2><p>CSE还提供了bizkeeper模块，这个模块集成了Hystrix的隔离仓等能力，这个隔离能力是针对微服务或者接口级别的，在实际业务系统中，发挥作用比较少。 这个模块也有判读错误条件：</p>
 <ul>
-<li>consumer: 490异常。 比如网络操作、超时等。 参考<code>org.apache.servicecomb.bizkeeper.ConsumerBizkeeperCommand#isFailedResponse</code></li>
+<li>consumer: 490异常。比如网络操作、超时等。 参考<code>org.apache.servicecomb.bizkeeper.ConsumerBizkeeperCommand#isFailedResponse</code></li>
 <li>provider: 590异常。比如业务处理抛出的未知RuntimeException等。 参考<code>org.apache.servicecomb.bizkeeper.ProviderBizkeeperCommand#isFailedResponse</code></li>
 </ul>
 

@@ -18,12 +18,9 @@ mark一篇CSEJavaSDK熔断、隔离判断逻辑的帖子，同样适用于Servic
 > 简单的描述：
 > 
 > 1. 网络错误 + 503错误码等情况可以触发重试。
-> 
 > 2. 网络错误 + 503错误码 + 超时等错误可以触发隔离。
-
-
-
-细节内容可以参考代码：
+>
+> 细节内容可以参考代码。
 
 ## 负载均衡模块能力
 
@@ -38,5 +35,5 @@ LB模块具备请求重试和实例隔离能力。
 
 CSE还提供了bizkeeper模块，这个模块集成了Hystrix的隔离仓等能力，这个隔离能力是针对微服务或者接口级别的，在实际业务系统中，发挥作用比较少。 这个模块也有判读错误条件：
 
-- consumer: 490异常。 比如网络操作、超时等。 参考`org.apache.servicecomb.bizkeeper.ConsumerBizkeeperCommand#isFailedResponse`
+- consumer: 490异常。比如网络操作、超时等。 参考`org.apache.servicecomb.bizkeeper.ConsumerBizkeeperCommand#isFailedResponse`
 - provider: 590异常。比如业务处理抛出的未知RuntimeException等。 参考`org.apache.servicecomb.bizkeeper.ProviderBizkeeperCommand#isFailedResponse`

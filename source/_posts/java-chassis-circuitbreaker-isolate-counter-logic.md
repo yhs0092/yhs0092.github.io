@@ -5,8 +5,8 @@ date: 2019-12-17 21:45:36
 categories:
 - 软件技术
 <!-- 留一个首页缩略图和文章页顶部大图的例子在这里，万分感谢 http://www.polayoutu.com ~  : ) -->
-index_img: http://ppe.oss-cn-shenzhen.aliyuncs.com/collections/176/3/thumb.jpg
-banner_img: http://ppe.oss-cn-shenzhen.aliyuncs.com/collections/176/3/thumb.jpg
+index_img: /img/blog/java-chassis-circuitbreaker-isolate-counter-logic/banner.jpg
+banner_img: /img/blog/java-chassis-circuitbreaker-isolate-counter-logic/banner.jpg
 ---
 mark一篇CSEJavaSDK熔断、隔离判断逻辑的帖子，同样适用于ServiceComb-Java-Chassis。
 

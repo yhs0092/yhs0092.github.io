@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="yhs0092">
+  <meta name="keywords" content="">
+  <title>Jar包内容读取和修改的技巧 ~ 遥·海·时 的博客</title>
+
+  <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.10.2/css/all.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.8.9/css/mdb.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/github-v2.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>遥·海·时 的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">Archives</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">Categories</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">Tags</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">About</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/blog/jar-file-inspect-and-modify-skill/banner.jpg')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期日, 十二月 29日 2019, 10:39 晚上
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    3.4k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      16 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <p>一些Linux上关于Jar包的实用小技巧</p>
+<a id="more"></a>
+
+<p>有过Linux服务器上Java问题定位经验的同学恐怕都碰到过一些疑难杂症问题，有些时候我们免不了会有把jar包打开看看的想法，以便检查一下里面的内容是不是真的如自己在本地环境里看到的那样。本文介绍了一些比较实用的方法，可以在Linux服务器环境达到这种效果 : )</p>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>为了演示下文的内容，先使用maven创建工程，把可执行jar包打出来。</p>
+<p>先找个空目录，执行maven创建空工程的命令：</p>
+<pre><code class="shell">mvn archetype:generate -DgroupId=test -DartifactId=demo -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false</code></pre>
+<p>在当前目录下就会出现一个名为demo的目录，里面就是创建出来的新工程了，进入demo目录内，编辑pom文件，在里面加入打可执行jar包所需的插件配置，如下：</p>
+<pre><code class="xml">  &lt;build&gt;
+    &lt;plugins&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;
+        &lt;version&gt;3.1&lt;/version&gt;
+        &lt;configuration&gt;
+          &lt;compilerArgument&gt;-parameters&lt;/compilerArgument&gt;
+          &lt;encoding&gt;UTF-8&lt;/encoding&gt;
+          &lt;source&gt;1.8&lt;/source&gt;
+          &lt;target&gt;1.8&lt;/target&gt;
+        &lt;/configuration&gt;
+      &lt;/plugin&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-dependency-plugin&lt;/artifactId&gt;
+        &lt;version&gt;2.10&lt;/version&gt;
+        &lt;executions&gt;
+          &lt;execution&gt;
+            &lt;id&gt;copy-dependencies&lt;/id&gt;
+            &lt;phase&gt;package&lt;/phase&gt;
+            &lt;goals&gt;
+              &lt;goal&gt;copy-dependencies&lt;/goal&gt;
+            &lt;/goals&gt;
+            &lt;configuration&gt;
+              &lt;outputDirectory&gt;target/lib&lt;/outputDirectory&gt;
+            &lt;/configuration&gt;
+          &lt;/execution&gt;
+        &lt;/executions&gt;
+      &lt;/plugin&gt;
+      &lt;plugin&gt;
+        &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;
+        &lt;artifactId&gt;maven-jar-plugin&lt;/artifactId&gt;
+        &lt;version&gt;2.6&lt;/version&gt;
+        &lt;configuration&gt;
+          &lt;archive&gt;
+            &lt;manifest&gt;
+              &lt;addClasspath&gt;true&lt;/addClasspath&gt;
+              &lt;classpathPrefix&gt;./lib/&lt;/classpathPrefix&gt;
+              &lt;mainClass&gt;test.App&lt;/mainClass&gt;
+              &lt;addDefaultImplementationEntries&gt;true&lt;/addDefaultImplementationEntries&gt;
+              &lt;addDefaultSpecificationEntries&gt;true&lt;/addDefaultSpecificationEntries&gt;
+            &lt;/manifest&gt;
+            &lt;manifestEntries&gt;
+              &lt;Class-Path&gt;.&lt;/Class-Path&gt;
+            &lt;/manifestEntries&gt;
+          &lt;/archive&gt;
+        &lt;/configuration&gt;
+      &lt;/plugin&gt;
+    &lt;/plugins&gt;
+  &lt;/build&gt;</code></pre>
+<p>这里配置了三个插件，<code>maven-compiler-plugin</code>指定使用1.8的Java版本进行编译构建，使用<code>UTF-8</code>编码，并且编译后的方法参数名为源码中定义的参数名。<code>maven-dependency-plugin</code>用于将本工程所依赖的所有jar包复制到<code>target/lib</code>目录下。<code>maven-jar-plugin</code>插件用于打包，它指定了<code>test.App</code>作为jar包的main启动类，将<code>target/lib</code>目录下的第三方依赖jar包逐个加入到可执行jar包的classpath中，并且额外将可执行jar包所在目录（<code>.</code>目录）也加入到classpath中了。</p>
+<p>maven自动生成的工程已经在<code>App</code>类里面打印了一句“Hello World!”了：</p>
+<pre><code class="java">package test;
+
+/**
+ * Hello world!
+ *
+ */
+public class App
+{
+    public static void main( String[] args )
+    {
+        System.out.println( &quot;Hello World!&quot; );
+    }
+}</code></pre>
+<p>我们把<code>App</code>类复制为<code>App2</code>类：</p>
+<pre><code class="shell">/tmp/jarfile/demo/src/main/java/test# cp App.java App2.java
+/tmp/jarfile/demo/src/main/java/test# ls -l
+total 8
+-rw-r--r-- 1 root root 180 Dec 29 16:30 App2.java
+-rw-r--r-- 1 root root 167 Dec 29 15:37 App.java</code></pre>
+<p>把修改一下<code>App2</code>类的内容：</p>
+<pre><code class="java">package test;
+
+/**
+ * Hello world!
+ *
+ */
+public class App2
+{
+    public static void main( String[] args )
+    {
+        System.out.println( &quot;Hello World! - from App2&quot; );
+    }
+}</code></pre>
+<p>然后在这个工程中执行<code>mvn clean package</code>把可执行jar包打出来。此时target目录里大概是这样的：</p>
+<pre><code class="shell">/tmp/jarfile/demo/target# ll
+total 44
+drwxr-xr-x 10 root root 4096 Dec 29 16:02 ./
+drwxr-xr-x  4 root root 4096 Dec 29 16:02 ../
+drwxr-xr-x  3 root root 4096 Dec 29 16:02 classes/
+-rw-r--r--  1 root root 2475 Dec 29 16:02 demo-1.0-SNAPSHOT.jar
+drwxr-xr-x  3 root root 4096 Dec 29 16:02 generated-sources/
+drwxr-xr-x  3 root root 4096 Dec 29 16:02 generated-test-sources/
+drwxr-xr-x  2 root root 4096 Dec 29 16:02 lib/
+drwxr-xr-x  2 root root 4096 Dec 29 16:02 maven-archiver/
+drwxr-xr-x  3 root root 4096 Dec 29 16:02 maven-status/
+drwxr-xr-x  2 root root 4096 Dec 29 16:02 surefire-reports/
+drwxr-xr-x  3 root root 4096 Dec 29 16:02 test-classes/</code></pre>
+<p><code>demo-1.0-SNAPSHOT.jar</code>就是打出来的可执行jar包了。执行<code>java -jar demo-1.0-SNAPSHOT.jar</code>，由于我们在<code>maven-jar-plugin</code>插件中指定的main类是<code>test.App</code>，所以可以看到控制台输出的是”Hello World!”：</p>
+<pre><code class="shell">/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World!</code></pre>
+<p>可执行jar包就打好了，准备工作完成~</p>
+<blockquote>
+<p>这种打法把第三方依赖包放在单独的lib目录里了，也有其他的打包方式可以把依赖jar打到可执行jar包内（如Spring Boot自带的jar包打包插件）。</p>
+</blockquote>
+<h2 id="查看和修改Jar包内容的方法"><a href="#查看和修改Jar包内容的方法" class="headerlink" title="查看和修改Jar包内容的方法"></a>查看和修改Jar包内容的方法</h2><p><strong>注意</strong>: 下文的每一小节都是独立的内容。为防止修改jar包的操作影响后文的效果，本文假设每一小节都是基于上文“准备工作”打出来的jar包进行的，互相不影响文件内容。</p>
+<h3 id="使用vim"><a href="#使用vim" class="headerlink" title="使用vim"></a>使用vim</h3><p>使用vim命令也可以查看jar包的文件内容，就像打开普通的文本文件一样，输入<code>vim &lt;jar包名&gt;</code>，vim会展示jar包内的文件列表：</p>
+<pre><code>&quot; zip.vim version v28
+&quot; Browsing zipfile /tmp/jarfile/demo/target/demo-1.0-SNAPSHOT.jar
+&quot; Select a file with cursor and press ENTER
+
+META-INF/
+META-INF/MANIFEST.MF
+test/
+test/App.class
+test/App2.class
+META-INF/maven/
+META-INF/maven/test/
+META-INF/maven/test/demo/
+META-INF/maven/test/demo/pom.xml
+META-INF/maven/test/demo/pom.properties</code></pre><p>把光标移动到对应的行上敲回车，就可以打开这个文件看到它的内容了。</p>
+<p>vim也可以编辑jar包内的文本文件，例如打开<code>META-INF/MANIFEST.MF</code>文件，将里面的”Main-Class”一行修改一下，把启动jar包的main类改为<code>App2</code>，如下：</p>
+<pre><code>Manifest-Version: 1.0
+Implementation-Title: demo
+Implementation-Version: 1.0-SNAPSHOT
+Archiver-Version: Plexus Archiver
+Built-By: root
+Specification-Title: demo
+Implementation-Vendor-Id: test
+Class-Path: .
+Main-Class: test.App2
+Created-By: Apache Maven 3.5.2
+Build-Jdk: 1.8.0_191
+Specification-Version: 1.0-SNAPSHOT
+Implementation-URL: http://maven.apache.org</code></pre><p>输入<code>:wq</code>命令保持并退出，跟我们编辑普通的文本文件一样操作。可能在将修改写入jar包并退出的时候会碰到报错，这种时候执行<code>:q!</code>命令强制退出就行了。再次执行<code>java -jar demo-1.0-SNAPSHOT.jar</code>可以看到此时打印的内容变成了”Hello World! - from App2”，说明对MANIFEST文件的修改生效了。</p>
+<pre><code class="shell">## 基于源码打出来的原始jar包
+/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World!
+## 使用vim修改manifest文件
+/tmp/jarfile/demo/target# vim demo-1.0-SNAPSHOT.jar
+## 再次执行jar包，可以看到修改生效了
+/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World! - from App2</code></pre>
+<h3 id="使用unzip和zip命令"><a href="#使用unzip和zip命令" class="headerlink" title="使用unzip和zip命令"></a>使用unzip和zip命令</h3><p>jar包，其实是zip包（不是tar包呢……）。所以如果想要看zip中的内容，可以直接把jar包当zip包解压开来看看，像这样：</p>
+<pre><code class="shell">/tmp/jarfile/demo/target# unzip demo-1.0-SNAPSHOT.jar -d extracted/
+Archive:  demo-1.0-SNAPSHOT.jar
+   creating: extracted/META-INF/
+  inflating: extracted/META-INF/MANIFEST.MF
+   creating: extracted/test/
+  inflating: extracted/test/App.class
+  inflating: extracted/test/App2.class
+   creating: extracted/META-INF/maven/
+   creating: extracted/META-INF/maven/test/
+   creating: extracted/META-INF/maven/test/demo/
+  inflating: extracted/META-INF/maven/test/demo/pom.xml
+  inflating: extracted/META-INF/maven/test/demo/pom.properties</code></pre>
+<p>所有的文件都被解压到<code>extract</code>目录中了。如果只是想看看jar包里面有什么文件，也可以加上<code>-l</code>参数，不解压只是把文件内容都列出来：</p>
+<pre><code class="shell">/tmp/jarfile/demo/target# unzip -l demo-1.0-SNAPSHOT.jar
+Archive:  demo-1.0-SNAPSHOT.jar
+  Length      Date    Time    Name
+---------  ---------- -----   ----
+        0  2019-12-29 16:32   META-INF/
+      374  2019-12-29 16:32   META-INF/MANIFEST.MF
+        0  2019-12-29 16:32   test/
+      553  2019-12-29 16:32   test/App.class
+      568  2019-12-29 16:32   test/App2.class
+        0  2019-12-29 16:32   META-INF/maven/
+        0  2019-12-29 16:32   META-INF/maven/test/
+        0  2019-12-29 16:32   META-INF/maven/test/demo/
+     2311  2019-12-29 16:02   META-INF/maven/test/demo/pom.xml
+      107  2019-12-29 16:32   META-INF/maven/test/demo/pom.properties
+---------                     -------
+     3913                     10 files</code></pre>
+<p>然后只解压特定的文件内容：</p>
+<pre><code class="shell">/tmp/jarfile/demo/target# unzip -l demo-1.0-SNAPSHOT.jar | grep MANIF
+      374  2019-12-29 17:08   META-INF/MANIFEST.MF
+/tmp/jarfile/demo/target# unzip demo-1.0-SNAPSHOT.jar META-INF/MANIFEST.MF
+Archive:  demo-1.0-SNAPSHOT.jar
+  inflating: META-INF/MANIFEST.MF
+/tmp/jarfile/demo/target# ll META-INF/MANIFEST.MF
+-rw-r--r-- 1 root root 374 Dec 29 17:08 META-INF/MANIFEST.MF</code></pre>
+<p>我们可以把MANIFEST文件编辑一下，把启动类改为<code>App2</code>：<code>sed -i &#39;s/App/App2/&#39; META-INF/MANIFEST.MF</code>。</p>
+<p>然后使用zip命令把修改后的文件替换回jar包中：<code>zip -u demo-1.0-SNAPSHOT.jar META-INF/MANIFEST.MF</code>。<code>-u</code>命令是把磁盘上的文件更新到jar包内，磁盘文件还是保留着的。也可以使用<code>-m</code>命令，把文件移动到jar包内，磁盘文件也就随之被删除了。</p>
+<p>再次执行jar包可以看到文件修改已经生效了。</p>
+<p>全流程如下：</p>
+<pre><code class="shell">## 打包，进入target目录执行jar包查看效果
+/tmp/jarfile/demo# mvn clean package 2&gt;&amp;1 1&gt;/dev/null
+/tmp/jarfile/demo# cd target/
+/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World!
+## 解压出manifest文件
+/tmp/jarfile/demo/target# unzip demo-1.0-SNAPSHOT.jar META-INF/MANIFEST.MF
+Archive:  demo-1.0-SNAPSHOT.jar
+  inflating: META-INF/MANIFEST.MF
+## 修改manifest文件的内容
+/tmp/jarfile/demo/target# sed -i &#39;s/App/App2/&#39; META-INF/MANIFEST.MF
+## 将修改后的manifest更新到jar包中
+/tmp/jarfile/demo/target# zip -u demo-1.0-SNAPSHOT.jar META-INF/MANIFEST.MF
+updating: META-INF/MANIFEST.MF
+        zip warning: Local Entry CRC does not match CD: META-INF/MANIFEST.MF
+ (deflated 42%)
+## 再次执行jar包可以看到修改生效了
+/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World! - from App2</code></pre>
+<h3 id="使用jar命令"><a href="#使用jar命令" class="headerlink" title="使用jar命令"></a>使用jar命令</h3><p>既然是jar包，当然也可以使用<code>jar</code>命令来进行处理了。这个看上去最“正统”的命令之所以被排到最后，是因为很多时候我们所面对的环境里根本没有安装jdk，所以只能使用前面那些相对“偏门”的方法了。（看看孩子都被逼成啥样儿了！）</p>
+<p><code>jar</code>命令可以用来创建、解压、更新jar包，这里只讲一点简单的。</p>
+<ul>
+<li><p><code>jar</code>命令有些用法和<code>tar</code>命令类似，使用<code>jar tf &lt;jar包名&gt;</code>命令可以查看jar包内的文件列表，也可以再加个<code>-v</code>参数获取更详细的信息。</p>
+</li>
+<li><p>使用<code>jar xf &lt;jar包名&gt; &lt;jar包内文件路径&gt;</code>命令可以将特定的文件解压出来。<strong>注意</strong>：解压和更新文件的时候文件路径都是相对的，相对于jar包内根目录和磁盘上的当前目录。</p>
+</li>
+<li><p>使用<code>jar uf &lt;jar包名&gt; &lt;文件路径&gt;</code>命令可以把特定文件更新到jar包内。</p>
+<p><strong>注意</strong>：单纯的<code>-u</code>参数可以修改jar包内的普通文件（配置、<code>.class</code>文件等），但是修改不了MANIFEST文件。要修改MANIFEST还需要加上<code>-m</code>参数，像这样：<code>jar ufm demo-1.0-SNAPSHOT.jar MANIFEST.MF</code>（注意<code>-m</code>参数在<code>-f</code>参数的后面，否则会报错！），由于磁盘上的MANIFEST文件的部分配置项的key与jar包内MANIFEST有重复，你可能还会看到一大堆的告警信息。</p>
+</li>
+</ul>
+<p>例子：</p>
+<pre><code class="shell">## 重新打包
+/tmp/jarfile/demo# mvn clean package 2&gt;&amp;1 1&gt;/dev/null
+/tmp/jarfile/demo# cd target/
+/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World!
+## 查看jar包内容
+/tmp/jarfile/demo/target# jar tf demo-1.0-SNAPSHOT.jar
+META-INF/
+META-INF/MANIFEST.MF
+test/
+test/App.class
+test/App2.class
+META-INF/maven/
+META-INF/maven/test/
+META-INF/maven/test/demo/
+META-INF/maven/test/demo/pom.xml
+META-INF/maven/test/demo/pom.properties
+## 解压出manifest文件
+/tmp/jarfile/demo/target# jar xf demo-1.0-SNAPSHOT.jar META-INF/MANIFEST.MF
+## 把入口类改成test.App2
+/tmp/jarfile/demo/target# sed -i &#39;s/App/App2/&#39; META-INF/MANIFEST.MF
+## 把新的manifest文件更新到jar包内，忽略告警信息
+/tmp/jarfile/demo/target# jar uvfm demo-1.0-SNAPSHOT.jar META-INF/MANIFEST.MF 2&gt;/dev/null
+updated manifest
+## 再次执行jar包，可以看到结果已经变了
+/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World! - from App2</code></pre>
+<h2 id="命令行编译class文件并更新到jar包内"><a href="#命令行编译class文件并更新到jar包内" class="headerlink" title="命令行编译class文件并更新到jar包内"></a>命令行编译class文件并更新到jar包内</h2><p>也许有的时候我们还需要临时修改一下某些类，比如为了获取定位问题的辅助信息多打点日志什么的。这个时候我们还需要修改源代码重新打包。但如果开发环境和程序部署环境是相互隔离的，而且部署环境恰好有jdk，我们也可以命令行手动编译class文件更新到jar包内。</p>
+<p>作为例子，我们先在target目录里面创建一份<code>App</code>类的源码（注意目录结构与package声明的一致）：</p>
+<pre><code class="shell">/tmp/jarfile/demo# mvn clean package 2&gt;&amp;1 1&gt;/dev/null
+/tmp/jarfile/demo# cd target/
+root@desktop-0023:/tmp/jarfile/demo/target# mkdir test
+root@desktop-0023:/tmp/jarfile/demo/target# vim test/App.java
+root@desktop-0023:/tmp/jarfile/demo/target# cat test/App.java
+package test;
+
+public class App
+{
+    public static void main( String[] args )
+    {
+        System.out.println( &quot;Hello World!&quot; );
+        App2.main( args );
+    }
+}</code></pre>
+<p>这里我们在<code>App</code>类里面调用了<code>App2#main</code>方法，所以<code>App</code>类是依赖<code>App2</code>类的。此时就不能直接使用<code>javac &lt;java源文件&gt;</code>的方式编译了，会报依赖找不到的错误：</p>
+<pre><code class="shell">root@desktop-0023:/tmp/jarfile/demo/target# javac test/App.java
+test/App.java:8: error: cannot find symbol
+        App2.main( args );
+        ^
+  symbol:   variable App2
+  location: class App
+1 error</code></pre>
+<p>还需要用<code>-cp</code>参数指定一下依赖：</p>
+<pre><code class="shell">## 更新jar包前
+root@desktop-0023:/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World!
+## 指定 demo-1.0-SNAPSHOT.jar 为classpath，编译App.java所需的依赖在这个jar里面有
+root@desktop-0023:/tmp/jarfile/demo/target# javac -cp demo-1.0-SNAPSHOT.jar test/App.java
+## 更新jar包内的App.class文件
+root@desktop-0023:/tmp/jarfile/demo/target# jar uvf demo-1.0-SNAPSHOT.jar test/App.class
+adding: test/App.class(in = 450) (out= 309)(deflated 31%)
+## 运行更新后的jar包
+root@desktop-0023:/tmp/jarfile/demo/target# java -jar demo-1.0-SNAPSHOT.jar
+Hello World!
+Hello World! - from App2</code></pre>
+<p>此时jar包的执行逻辑已经被我们新编辑的<code>App.java</code>源码修改了。</p>
+<hr>
+<p>Banner图源：Photo on <a href="https://visualhunt.com/re6/5296d2aa" target="_blank" rel="noopener">VisualHunt.com</a></p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/%E8%BF%90%E7%BB%B4%E8%83%BD%E5%8A%9B">运维能力</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/java">java</a>
+                
+                  <a class="hover-with-bg" href="/tags/%E8%BF%90%E7%BB%B4%E8%83%BD%E5%8A%9B">运维能力</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js" ></script>
+<script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js" ></script>
+<script src="https://cdn.staticfile.org/mdbootstrap/4.8.9/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="https://cdn.staticfile.org/tocbot/4.8.0/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="https://cdn.staticfile.org/smooth-scroll/16.1.0/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="https://cdn.staticfile.org/prettify/r298/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/typed.js/2.0.10/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "Jar包内容读取和修改的技巧&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/anchor-js/4.2.0/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "left",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>

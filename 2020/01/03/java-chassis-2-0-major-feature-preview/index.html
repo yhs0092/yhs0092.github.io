@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="yhs0092">
+  <meta name="keywords" content="">
+  <title>Java-Chassis 2.0 新版本重大变更预览 ~ 遥·海·时 的博客</title>
+
+  <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.10.2/css/all.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.8.9/css/mdb.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/github-v2.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.1.1"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>遥·海·时 的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">Archives</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">Categories</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">Tags</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">About</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/blog/java-chassis-2-0-major-feature-preview/banner.jpg')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期五, 一月 3日 2020, 9:15 晚上
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    3.9k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      14 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <p>Java-Chassis 2.0 版本发布前夕，解读新版本核心机制的变更。</p>
+<a id="more"></a>
+
+<h2 id="Java-Chassis与契约"><a href="#Java-Chassis与契约" class="headerlink" title="Java-Chassis与契约"></a>Java-Chassis与契约</h2><p>如果让我给出一个<a href="https://github.com/apache/servicecomb-java-chassis" target="_blank" rel="noopener">ServiceComb-Java-Chassis</a>与其他微服务框架最本质的区别，私以为不是handler、filter等扩展机制，也不是能够充分发挥Vert.x性能优势的Reactive模式，而是它以契约为中心的设计思想。</p>
+<h3 id="基于契约的抽象模型"><a href="#基于契约的抽象模型" class="headerlink" title="基于契约的抽象模型"></a>基于契约的抽象模型</h3><p>Java-Chassis对OpenAPI契约的原生支持使其对于用户的服务接口的约束和掌握能力达到了一个比较高的水准，大家可以去看看Java-Chassis对于其<a href="https://docs.servicecomb.io/java-chassis/zh_CN/start/architecture.html" target="_blank" rel="noopener">框架架构</a>的描述，它可以将SpringMVC、JAX-RS、透明RPC三种服务端编程模型和RPC、RestTemplate两种客户端变成模型都归一化到OpenAPI契约上，在此基础上可以提供统一的运行模型（服务治理、负载均衡等）和通信模型（HTTP协议、highway协议），让治理和传输变成了与业务代码形态无关的公共能力。这一切都是Java-Chassis原生自带的，不需要用户再去手动集成任何其他的框架了。</p>
+<p><img src="/img/blog/java-chassis-2-0-major-feature-preview/java-chassis-architecture.png" srcset="/img/loading.gif" alt=""></p>
+<h3 id="强类型内核——运行时参数与契约声明完全一致"><a href="#强类型内核——运行时参数与契约声明完全一致" class="headerlink" title="强类型内核——运行时参数与契约声明完全一致"></a>强类型内核——运行时参数与契约声明完全一致</h3><p>我们还可以更进一步地设想一下，因为契约的存在，Java-Chassis是可以在运行模型中知道每个微服务有多少个接口，各个接口的url和参数，以及对象类型参数的内部详细字段信息的。因此如果用户想要基于Java-Chassis开发一些比较高阶的，需要依赖这些接口细节信息的治理逻辑，契约信息是可以让事情变得更简单的。<br>但要想做到比较理想化的状态，Java-Chassis需要确保运行时在框架里传输的参数类型确实是契约声明的参数类型。大家可以用Java-Chassis 1.3版本写个<a href="https://docs.servicecomb.io/java-chassis/zh_CN/edge/by-servicecomb-sdk.html" target="_blank" rel="noopener">EdgeService</a>网关服务，再写个后台demo服务做个实验。通常我们是不会在网关服务引用后端服务的接口jar包的，这也意味着网关服务的classpath里找不到后端服务的参数类型。但Java-Chassis会根据契约里面记录的信息（<code>x-java-class</code>字段）去搜索网关服务的classpath。<strong>如果在EdgeService网关服务里找不到这个参数类型（类名和包名得完全匹配上），框架会根据后端服务契约的记载去动态生成这样一个Java类型，以确保当请求经过EdgeService的运行模型时，里面的参数类型就是契约里面记录的类型。</strong>可以在EdgeService的handler链里面打个断点，比如打在<code>org.apache.servicecomb.core.Invocation#next</code>方法里，这里是handler链遍历执行的必经之路。关注一下<code>Invocation</code>的<code>getArgs</code>方法返回的对象数组，这里面按照后端服务契约的声明记录了请求参数。你会发现里面的参数顺序和类型都和契约里面记载的一模一样。<strong><em>这就是Java-Chassis所说的“强类型内核”——保证Java-Chassis框架里传输的参数数据是强类型的，与契约声明完全一致</em></strong>。</p>
+<h3 id="促进系统接口规范性"><a href="#促进系统接口规范性" class="headerlink" title="促进系统接口规范性"></a>促进系统接口规范性</h3><p>此外，这种框架上的约束可以促使用户设计出更符合REST风格的微服务接口。虽然完成一份课程设计作业可能完全不需要你去关注服务的接口设计的好坏，但这在大型生产系统中却是一个要命的课题——大公司的IT系统通常都比较庞大，而且可能被划分为几个不同的系统交给不同的部门（或承包商）开发，这些系统之间有着各种交互逻辑。如果接口设计得太烂的话，要理解这些接口的行为都是个难题。随之而来的问题还有部门间沟通成本的提高：如果你想确定这么一个接口应该如何调用，最方便的方式当然是去找它的开发或者维护者当面询问了。但其实对于程序开发而言，语音交流是很低效的，而且信息得不到沉淀，有多少人要对接你的系统，你就会被询问多少次。至于接口文档？老实说一个团队都把代码维护到这个份上了，你也很难指望他们写的文档有多好，很大可能是文档已经完全过时，或者根本不存在。即使上头有整改的命令下来，让部门梳理接口文档，花大力气整出来的资料也很有可能在一段时间后再次陷入过时的状态……文档不存在你还知道找人问，文档要是过时了，会埋下多大坑呢？这个只能看你的运气了。<br>笔者曾经见识过不同公司、部门的业务系统，它们都免不了有一些放飞自我的接口……举个简单的例子，接口单一性原则很容易随着系统的膨胀而被打破。你以为只是往里面不停地加新参数吗？实际情况可能更糟糕！有些开发者使用的微服务开发框架具备多态序列化能力，也就是说他们可以把微服务接口参数定义为一个抽象类、接口或者Object，然后让业务代码根据实际传入参数的类型来判断执行哪种业务逻辑。这种代码一旦出现问题你很难分析，找开发都没用，搞不好开发已经换过几批了，这个时候程序的行为只有在运行起来时才能知道，你已经无法通过走读代码分析业务系统的逻辑了。BTW，一些使用Servlet开发风格的旧系统通常也会有类似的问题。<br>等到你发现这个系统已经没救了的时候……你也只能捏着鼻子忍下来，否则一堆人会找你反馈接口兼容性问题。在很多业务场景下，维持对外接口的兼容性是更加不能触犯的原则。<br><strong>要想解决这个问题，成本最低的方式当然是从源头下手</strong>，一开始就别写烂接口，就不会有那么多的幺蛾子了。Java-Chassis要原生支持OpenAPI规范的契约，就要求用户写出形式上足够规范的接口，否则服务启动就会在<a href="https://docs.servicecomb.io/java-chassis/zh_CN/build-provider/code-first.html" target="_blank" rel="noopener" title="使用隐式契约">框架自动生成契约</a>的时候报错。接口形式上没什么大问题，写出烂接口的可能性自然也会降低了。天生自带一份Swagger契约文档的框架也可以让开发人员在跟其他部门的人打交道的时候少费些口舌，与代码同源的接口文档在可信度上也比手写的文档要高得多。</p>
+<h2 id="硬币的反面"><a href="#硬币的反面" class="headerlink" title="硬币的反面"></a>硬币的反面</h2><p>然而成也萧何败萧何，Java-Chassis这种基于契约的设计虽然给内部各组件的归一化设计带来了诸多便利，也让它的治理扩展能力有更多的遐想空间，但是它确实对用户的接口设计多了一些限制。据我观察，这也是大部分用户上手Java-Chassis的最大难点。此外还有两点比较容易被人诟病。</p>
+<h3 id="网关转发接口行为变化"><a href="#网关转发接口行为变化" class="headerlink" title="网关转发接口行为变化"></a>网关转发接口行为变化</h3><p>Java-Chassis的这一强类型内核也让框架的行为在某些场景下变得有些令人迷惑。举个例子，部分用户可能在后端服务接口参数里面做一些特别的设置，像是在属性声明的时候给一个默认值，如下：</p>
+<pre><code class="java">public class Person {
+  // 给name属性赋一个默认值&quot;Bob&quot;
+  private String name = &quot;Bob&quot;;
+
+  // getter/setter &amp; toString omitted
+}</code></pre>
+<p>微服务接口逻辑如下：</p>
+<pre><code class="java">  @PostMapping(path = &quot;/greeting&quot;)
+  public String greeting(@RequestBody Person person) {
+    return &quot;Hello, &quot; + person.getName();
+  }</code></pre>
+<p>在直接调用后端服务接口时一切看上去都是符合预期的：</p>
+<ul>
+<li><p>带name调用接口：</p>
+<pre><code>&gt; $ curl -XPOST -H &#39;Content-Type: application/json&#39; \
+&gt; &#39;http://localhost:8080/provider/v0/greeting&#39; \
+&gt; -d &#39;{&quot;name&quot;:&quot;Alice&quot;}&#39;
+&quot;Hello, Alice&quot;</code></pre></li>
+<li><p>不带name调用接口：</p>
+<pre><code>&gt; $ curl -XPOST -H &#39;Content-Type: application/json&#39; \
+&gt; &#39;http://localhost:8080/provider/v0/greeting&#39; \
+&gt; -d &#39;{}&#39;
+&quot;Hello, Bob&quot;</code></pre></li>
+</ul>
+<p>但如果通过EdgeService网关服务调用后端服务，效果就不是这样了：</p>
+<pre><code>&gt; $ curl -XPOST -H &#39;Content-Type: application/json&#39; \
+&gt; &#39;http://localhost:8000/rest/provider/v0/greeting&#39; \
+&gt; -d &#39;{}&#39;
+&quot;Hello, null&quot;</code></pre><p>也许你已经意识到问题出在哪里了：<em>EdgeService网关是没有依赖后端服务的接口jar包的，在classpath中找不到<code>Person</code>类的情况下，Java-Chassis会根据后端服务契约的描述动态生成一个<code>Person</code>类。框架生成的<code>Person</code>类只会有契约所声明的属性及其getter/setter方法（也就是标准的Java Bean），至于用户在后端服务写的属性初始化赋值代码，框架当然是不知道的。</em>所以在EdgeService网关里，<code>Person</code>类大概长这样：</p>
+<pre><code class="java">public class Person {
+  private String name;
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+}</code></pre>
+<p>EdgeService转发给后端的body也就变了，它接到的请求body是<code>{}</code>，但在EdgeService内部的运行模型经历一轮反序列化和序列化后，转发给后端服务的body是<code>{&quot;name&quot;:null}</code>这样的。</p>
+<p>类似的场景还有在后端服务接口参数上打上Jackson的相关注解来修改参数的序列化行为等。</p>
+<blockquote>
+<p>这个现象也不好说是Java-Chassis的问题，因为定义微服务接口的时候最好是不要让自己的接口依赖于“空”值或者<code>null</code>值这种概念，否则很容易出问题。不过现象确实有点反直觉，不少人以为框架里面传的是像<code>String</code>或者<code>byte[]</code>这种类型的原始json串，但实际上却不是这样。</p>
+</blockquote>
+<h3 id="潜在的性能问题"><a href="#潜在的性能问题" class="headerlink" title="潜在的性能问题"></a>潜在的性能问题</h3><p>在一些旧系统改造为微服务的项目里，第一步通常是把一个单体系统切换到使用Java-Chassis开发，此时的一个“微”服务通常很大，单个服务有着大量的接口和参数定义。对于后端服务之间的调用场景可能还好，因为客户端服务一般会引入服务端的接口定义jar包，不需要客户端在加载服务端契约的时候去动态生成Java类型了。而对于EdgeService网关而言，每加载一个版本的后端服务契约，就需要生成大量的动态Java类（Java-Chassis 1.x版本是一个微服务版本对应一个<code>ClassLoader</code>实例的）。由于客户端，无论是普通的后端服务还是EdgeService，都需要将一个微服务版本的契约一次性完全加载完成才能做调用，服务接口太多的话加载会很消耗时间。<br>某些用户在使用EdgeService时还会长时间运行不升级不重启，<code>ClassLoader</code>实例太多了占用的内存也会变多，最终导致EdgeService网关的堆内存消耗殆尽，系统响应变慢甚至OOM，要解决这种问题只能重启微服务实例。</p>
+<h2 id="Java-Chassis-2-0：弱类型内核"><a href="#Java-Chassis-2-0：弱类型内核" class="headerlink" title="Java-Chassis 2.0：弱类型内核"></a>Java-Chassis 2.0：弱类型内核</h2><p>为了改进强类型内核方案下Java-Chassis的使用不便，ServiceComb-Java-Chassis开发团队对Java-Chassis的核心机制进行了一番重构，为了区别于旧版本，新版本的Java-Chassis被称为“弱类型内核”版本。</p>
+<blockquote>
+<p>强类型内核版本对应于Java-Chassis的<a href="https://github.com/apache/servicecomb-java-chassis/tree/1.3.x" target="_blank" rel="noopener">1.3.x分支</a>，版本是 1.3.x。弱类型内核版本对应于Java-Chassis的<a href="https://github.com/apache/servicecomb-java-chassis/tree/master" target="_blank" rel="noopener">master分支</a>，版本是 2.0。<br><em>注意，这里讨论的场景是REST传输方式。</em></p>
+</blockquote>
+<h3 id="核心原理变更"><a href="#核心原理变更" class="headerlink" title="核心原理变更"></a>核心原理变更</h3><p>在2.0版本中，consumer端服务在加载provider端微服务契约时仍然会根据<code>x-java-class</code>字段去classpath里查找是否有现成的类型，如果找得到则仍然沿用找到的参数类型；<strong>找不到声明的参数类型时，框架不会根据契约描述去动态生成参数Java类型，而是依赖Jackson的反序列化能力尝试将其转换为<code>Object</code>类型数据。实际得到的参数值，依照原始json串的格式，可能是<code>LinkedHashMap</code>/<code>String</code>/primitive type等。</strong>使用过Jackson的朋友可以把这看成是<code>ObjectMapper</code>的原生能力，指定将json串反序列化为<code>Object</code>类型。也就是说，Java-Chassis减弱了契约对于运行时实际参数类型的约束力，以此得到了更好的契约加载性能、更小的内存占用量，以及某些使用场景下更符合“直觉”的使用体验。</p>
+<p>对于后端微服务之间的调用场景，如果consumer端加载了provider端的接口jar包，那么从1.3版本升级到2.0版本可能对性能和内存占用没有多大的影响。而对于EdgeService调用后端服务，或者consumer端使用的参数类型与provider端声明的不一致（总之就是consumer端的classpath里找不到provider声明的参数类型）的场景，由于consumer端不再根据契约动态生成参数和接口类型，加载服务端契约的耗时和内存消耗量都会减少——契约对于consumer端的框架而言更像是一份“参考文档”了。</p>
+<p>除此之外，EdgeService网关的请求转发行为看上去也更像是原样转发了。还是以上文所举的场景为例，如果发给网关的请求body是<code>{}</code>，那么EdgeService会将其反序列化为一个空的<code>LinkedHashMap</code>，经过其内部的handler链再转发给后端服务，后端服务接收到的请求body仍然是<code>{}</code>。</p>
+<p>对于一些特别的场景，例如基于Java-Chassis二次开发业务调用系统，请求转发和调用操作很可能是使用通用逻辑统一执行的，代码形式与普通业务代码不同。由于强类型内核要求传参类型与契约声明一致，在实现的复杂度上会高一些。而对于弱类型内核而言，使用LinkedHashMap等类型传参也是可以的，不强制要求加载契约声明的参数类型，实现起来会更容易。</p>
+<h3 id="升级兼容性"><a href="#升级兼容性" class="headerlink" title="升级兼容性"></a>升级兼容性</h3><p>目前看来，Java-Chassis从1.3升级到2.0版本的主要变更在于传输方面的内部逻辑，从用户体验上来看区别不大。<br>如果系统使用Java-Chassis的方式比较常规，那么升级时碰到不兼容问题的概率就比较小，可能需要注意的地方包括，在EdgeService的handler、filter里面拿到的<code>Invocation</code>携带的REST请求参数和返回值的类型会有变化。<br>如果业务系统以深度定制的方式使用了Java-Chassis，那么在升级过程中可能会发现一些底层的类、方法的变动。</p>
+<p>在新旧版本混用的问题上，对于REST传输方式，因为其底层传输实现是HTTP协议+json格式body体，新旧版本的Java-Chassis在这方面的实现都是符合业界标准的，可以将基于不同版本的Java-Chassis开发的微服务组合在一起相互调用。但对于highway传输方式，目前来看highway会进行重新的设计和实现，因此2.0版本和1.x版本的Java-Chassis无法以highway的方式互相调用。</p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/%E8%BD%AF%E4%BB%B6%E6%8A%80%E6%9C%AF">软件技术</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/ServiceComb">ServiceComb</a>
+                
+                  <a class="hover-with-bg" href="/tags/microservice">microservice</a>
+                
+                  <a class="hover-with-bg" href="/tags/Java-Chassis">Java-Chassis</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js" ></script>
+<script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js" ></script>
+<script src="https://cdn.staticfile.org/mdbootstrap/4.8.9/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="https://cdn.staticfile.org/tocbot/4.8.0/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="https://cdn.staticfile.org/smooth-scroll/16.1.0/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="https://cdn.staticfile.org/prettify/r298/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/typed.js/2.0.10/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "Java-Chassis 2.0 新版本重大变更预览&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/anchor-js/4.2.0/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "left",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>

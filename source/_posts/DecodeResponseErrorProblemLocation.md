@@ -3,8 +3,8 @@ title: 【ServiceComb】微服务调用，应答返回时报ClassCastException�
 date: 2018-08-09 18:02:46
 tags: [ServiceComb-Java-Chassis, microservice]
 categories:
-- 软件技术
-- 踩坑
+- [软件技术]
+- [踩坑]
 ---
 
 记录一个返回值反序列化及类型转换的问题。

@@ -3,8 +3,8 @@ title: 记录一个Spring ApplicationContext重复加载的问题
 date: 2018-12-29 20:29:31
 tags: [Spring]
 categories:
-- 软件技术
-- 踩坑
+- [软件技术]
+- [踩坑]
 ---
 
 Spring ApplicationContext重复加载可能造成各种奇怪问题，如无法自动注入Spring Bean、Spring Bean重复加载报错等等。仔细观察启动日志通常能从Spring应用上下文加载日志中看出一点端倪。

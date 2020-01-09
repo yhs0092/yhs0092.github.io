@@ -3,8 +3,8 @@ title: Docker容器内部署Java微服务的内存限制问题
 date: 2018-11-24 10:42:25
 tags: [ServiceComb-Java-Chassis, K8S, microservice, docker, JVM]
 categories:
-- 软件技术
-- 踩坑
+- [软件技术]
+- [踩坑]
 ---
 
 警惕JVM占用内存超过K8S容器内存配额限制，进而导致微服务进程被关闭的问题。

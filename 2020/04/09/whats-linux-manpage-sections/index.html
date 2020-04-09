@@ -15,7 +15,7 @@
   <meta name="description" content="">
   <meta name="author" content="yhs0092">
   <meta name="keywords" content="">
-  <title>分类 - 运维能力 ~ 遥·海·时 的博客</title>
+  <title>man page section 的打开方式 ~ 遥·海·时 的博客</title>
 
   <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.10.2/css/all.min.css"  >
 <link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css"  >
@@ -38,7 +38,7 @@
 
 
 <body>
-  <header style="height: 80vh;">
+  <header style="height: 70vh;">
     <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
   <div class="container">
     <a class="navbar-brand"
@@ -98,7 +98,7 @@
 </nav>
 
     <div class="view intro-2" id="background"
-         style="background: url('/img/default-banner.jpg')no-repeat center center;
+         style="background: url('/img/post-banner.jpg')no-repeat center center;
            background-size: cover;
            background-attachment: fixed;">
       <div class="full-bg-img">
@@ -108,6 +108,41 @@
               
             </span>
 
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期四, 四月 9日 2020, 8:39 晚上
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    426 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      1 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
             
           </div>
 
@@ -119,45 +154,98 @@
 
   <main>
     
-      <div class="container nopadding-md">
-        <div class="py-5 z-depth-3" id="board">
-          
-          <div class="container">
-            <div class="row">
-              <div class="col-12 col-md-10 m-auto">
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <p>你知道 man page 后面的括号和数字是什么意思吗？</p>
+<a id="more"></a>
+
+<p>使用 Linux 的时候免不了会忘记某些命令的用法，这时候， man page ，或者说 <code>man</code> 命令就能帮助我们快速查找命令的正确使用姿势。但有时候，我们在 man page 里能看到命令后面带着括号和数字的内容，像是某种引用一样。比如，我们输入 <code>man sleep</code>，在 man page 开头能看到这样的内容：</p>
+<pre><code class="Text">SLEEP(1)                         User Commands                        SLEEP(1)
+
+NAME
+       sleep - delay for a specified amount of time</code></pre>
+<p>而在结尾的<code>SEE ALSO</code>部分，又能看到这样的内容：</p>
+<pre><code class="Text">SEE ALSO
+       sleep(3)</code></pre>
+<p>那么， <code>sleep(1)</code> 和 <code>sleep(3)</code> 有什么区别呢？而且，似乎我现在看的是 <code>sleep(1)</code> ，如果我想看 <code>sleep(3)</code>，我该怎么打开它呢？</p>
+<p>其实我们查阅一下 <code>man</code> 命令自己的 man page 就能看到相关说明，括号加数字表示的是 man page 的 “section” ，不同 section 代表的含义如下：</p>
+<pre><code class="Text">       1   Executable programs or shell commands
+       2   System calls (functions provided by the kernel)
+       3   Library calls (functions within program libraries)
+       4   Special files (usually found in /dev)
+       5   File formats and conventions eg /etc/passwd
+       6   Games
+       7   Miscellaneous  (including  macro  packages  and  conventions), e.g.
+           man(7), groff(7)
+       8   System administration commands (usually only for root)
+       9   Kernel routines [Non standard]</code></pre>
+<p>所以一般我们查 Linux shell 命令时应该看的是 section 1 部分。当我们使用<code>man</code>命令时，系统会根据<code>1 n l 8 3 2 3posix 3pm 3perl 3am 5 4 9 6 7</code>的默认优先级顺序返回一个匹配上的 man page section 展示出来。</p>
+<p>如果要看其他 section 的 man page ，打开方式有两种：</p>
+<ul>
+<li><code>man &lt;section&gt; &lt;cmd&gt;</code>，例如 <code>man 3 sleep</code></li>
+<li><code>man &lt;cmd&gt;.&lt;section&gt;</code>，例如 <code>man sleep.3</code></li>
+</ul>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
                 
-
-<div class="list-group">
-<!--  <p class="h4">共计 2 篇文章</p>-->
-  <hr>
-  
-    
-      
-      <p class="h5">2020</p>
-    
-    <a href="/2020/04/09/whats-linux-manpage-sections/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">man page section 的打开方式</span>
-      <span style="float: right;">04-09</span>
-    </a>
-  
-    
-      
-      <p class="h5">2019</p>
-    
-    <a href="/2019/12/29/jar-file-inspect-and-modify-skill/" class="list-group-item list-group-item-action">
-      <span class="archive-post-title">Jar包内容读取和修改的技巧</span>
-      <span style="float: right;">12-29</span>
-    </a>
-  
-</div>
-
-
-
-              </div>
-            </div>
+                  <a class="hover-with-bg" href="/categories/%E8%BF%90%E7%BB%B4%E8%83%BD%E5%8A%9B">运维能力</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/%E8%BF%90%E7%BB%B4%E8%83%BD%E5%8A%9B">运维能力</a>
+                
+                  <a class="hover-with-bg" href="/tags/Linux">Linux</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
           </div>
         </div>
       </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
     
   </main>
 
@@ -232,6 +320,11 @@
 
 
 
+  
+    <script src="https://cdn.staticfile.org/tocbot/4.8.0/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
 
 
   <script src="https://cdn.staticfile.org/smooth-scroll/16.1.0/smooth-scroll.min.js" ></script>
@@ -272,7 +365,7 @@
     var typed = new Typed('#subtitle', {
       strings: [
         '  ',
-        "分类 - 运维能力&nbsp;",
+        "man page section 的打开方式&nbsp;",
       ],
       cursorChar: "_",
       typeSpeed: 70,

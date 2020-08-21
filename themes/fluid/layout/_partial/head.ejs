@@ -4,6 +4,12 @@ var title = config.title
 if (page.title) {
   title = [page.title, title].join(joinStr)
 }
+var keywords = ""
+if (page.keywords && page.keywords.length) {
+  keywords = page.keywords.join(",")
+} else if (theme.keywords) {
+  keywords = theme.keywords.join(",")
+}
 %>
 
 <head>
@@ -15,7 +21,7 @@ if (page.title) {
   <meta http-equiv="x-ua-compatible" content="ie=edge">
   <meta name="description" content="<%= config.description %>">
   <meta name="author" content="<%= config.author %>">
-  <meta name="keywords" content="<%= config.keywords %>">
+  <meta name="keywords" content="<%= keywords %>">
   <title><%= title %></title>
 
   <%- partial('_partial/css.ejs') %>

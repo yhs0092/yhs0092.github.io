@@ -117,7 +117,7 @@ index:
     text: Hello world! # 为空则按 hexo config.subtitle 显示
   auto_excerpt:
     enable: true
-  post_url_target: _self  # available: _blank | _self
+  post_url_target: _blank  # available: _blank | _self
   post_meta: # 是否显示文章信息（时间、分类、标签）
     date: true
     category: true

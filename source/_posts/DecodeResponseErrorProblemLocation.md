@@ -2,6 +2,7 @@
 title: 【ServiceComb】微服务调用，应答返回时报ClassCastException问题的定位
 date: 2018-08-09 18:02:46
 tags: [ServiceComb-Java-Chassis, microservice]
+keywords: [ServiceComb-Java-Chassis, microservice]
 categories:
 - [软件技术]
 - [踩坑]

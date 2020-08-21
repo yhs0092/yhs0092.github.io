@@ -1,6 +1,7 @@
 ---
 title: 给Hexo + Github pages搭建的个人博客绑定域名
 tags: [ web ]
+keywords: [ web ]
 date: 2019-12-21 12:56:15
 categories:
 - 软件技术

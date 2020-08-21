@@ -1,6 +1,7 @@
 ---
 title: man page section 的打开方式
 tags: [ Linux, 运维能力 ]
+keywords: [ Linux, 运维能力 ]
 date: 2020-04-09 20:39:21
 categories:
 - 运维能力

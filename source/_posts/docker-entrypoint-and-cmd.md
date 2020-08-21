@@ -6,6 +6,7 @@ categories:
 - 软件技术
 index_img: /img/blog/docker-entrypoint-and-cmd/banner.jpg
 banner_img: /img/blog/docker-entrypoint-and-cmd/banner.jpg
+keywords: [docker]
 ---
 
 关于 Dockerfile 中 ENTRYPOINT 和 CMD 的简要对比及使用说明

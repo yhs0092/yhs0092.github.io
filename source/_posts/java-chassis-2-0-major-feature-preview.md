@@ -1,6 +1,7 @@
 ---
 title: Java-Chassis 2.0 新版本重大变更预览
 tags: [ ServiceComb, Java-Chassis, microservice ]
+keywords: [ ServiceComb, Java-Chassis, microservice ]
 date: 2020-01-03 21:15:56
 categories:
 - 软件技术

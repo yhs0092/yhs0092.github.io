@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="description" content="">
+  <meta name="author" content="yhs0092">
+  <meta name="keywords" content="docker,ServiceComb-Java-Chassis,CSE">
+  <title>Docker 容器终止运行方式小记 ~ 遥·海·时 的博客</title>
+
+  <link rel="stylesheet" href="https://cdn.staticfile.org/font-awesome/5.10.2/css/all.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/css/bootstrap.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/mdbootstrap/4.8.9/css/mdb.min.css"  >
+<link rel="stylesheet" href="https://cdn.staticfile.org/github-markdown-css/3.0.1/github-markdown.min.css"  >
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1067060_qzomjdt8bmp.css">
+
+
+
+  <link rel="stylesheet" href="/lib/prettify/github-v2.min.css"  >
+
+<link rel="stylesheet" href="/css/main.css"  >
+
+
+  <link rel="stylesheet" href="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.css"  >
+
+
+<meta name="generator" content="Hexo 4.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>遥·海·时 的博客</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/">Home</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/archives/">Archives</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/categories/">Categories</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/tags/">Tags</a>
+          </li>
+        
+          
+          
+          <li class="nav-item">
+            <a class="nav-link" href="/about/">About</a>
+          </li>
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" data-toggle="modal" data-target="#modalSearch">&nbsp;&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+
+</nav>
+
+    <div class="view intro-2" id="background"
+         style="background: url('/img/blog/docker-termination-description/banner.jpg')no-repeat center center;
+           background-size: cover;
+           background-attachment: fixed;">
+      <div class="full-bg-img">
+        <div class="mask rgba-black-light flex-center">
+          <div class="container text-center white-text fadeInUp">
+            <span class="h2" id="subtitle">
+              
+            </span>
+
+            
+              <br>
+              
+                <p class="mt-3">
+                  <i class="fas fa-calendar-alt" aria-hidden="true"></i>&nbsp;
+                  星期五, 八月 21日 2020, 4:05 下午
+                </p>
+              
+
+              <p>
+                
+                  
+                  &nbsp;<i class="far fa-chart-bar"></i>
+                  <span class="post-count">
+                    3.2k 字
+                  </span>&nbsp;
+                
+
+                
+                  
+                  &nbsp;<i class="far fa-clock"></i>
+                  <span class="post-count">
+                      12 分钟
+                  </span>&nbsp;
+                
+
+                
+                  <!-- 不蒜子统计文章PV -->
+                  
+                  &nbsp;<i class="far fa-eye" aria-hidden="true"></i>&nbsp;
+                  <span id="busuanzi_container_page_pv">
+                    <span id="busuanzi_value_page_pv"></span> 次
+                  </span>&nbsp;
+                
+              </p>
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-md">
+      <div class="py-5 z-depth-3" id="board">
+        <div class="post-content mx-auto" id="post">
+          <div class="markdown-body">
+            <p>简要介绍 <code>docker stop/kill</code> ，以及如何更优雅地触发容器退出流程</p>
+<a id="more"></a>
+
+<h2 id="docker-容器根进程与容器退出机制"><a href="#docker-容器根进程与容器退出机制" class="headerlink" title="docker 容器根进程与容器退出机制"></a>docker 容器根进程与容器退出机制</h2><p>docker 作为一种轻量级的“虚拟化”技术，通过 Linux 提供的 cgroup 和 namespace 等机制限制容器内进程的资源占用及其对宿主机资源的可见性。当容器启动时，宿主机 Linux 内核会为此容器创建一个 PID namespace 。容器的启动进程在宿主机上看来是一个普通的进程，而在该容器的 PID namespace 中看上去 <code>PID</code> = 1 ，即它是此容器内的根进程。当容器内 PID=1 的进程停止运行时，容器便停止运行了。</p>
+<p>作为例子，我们启动一个 alpine linux 的容器，使其执行 <code>ping localhost</code> 命令：</p>
+<pre><code class="shell">## --rm 表示容器结束时自动删除，免去手动清理无用容器的工作
+docker run --rm --entrypoint ping alpine localhost</code></pre>
+<p>运行 <code>docker ps</code> 找到这个 alpine 容器，我们可以使用 <code>docker inspect</code> 命令查看到此容器的根进程在宿主机上的进程号：</p>
+<pre><code class="shell"># docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                    NAMES
+52100c256521        alpine              &quot;ping localhost&quot;    9 seconds ago       Up 8 seconds                                 zen_mccarthy
+
+# docker inspect 52100 -f &#39;{{.State.Pid}}&#39;
+9509</code></pre>
+<blockquote>
+<p><code>docker inspect &lt;container_id&gt;</code> 会以 json 格式打印容器的信息。<code>-f</code>参数后面接的格式化串声明 <code>docker inspect</code> 只将容器根进程的进程号打印出来。</p>
+</blockquote>
+<p>然后在宿主机执行<code>ps &lt;Pid&gt;</code>，果然是能看到一个 <code>ping localhost</code> 进程的：</p>
+<pre><code class="shell"># ps 9509
+  PID TTY      STAT   TIME COMMAND
+ 9509 ?        Ss     0:00 ping localhost</code></pre>
+<p>使用 <code>kill</code> 命令向其发送一个 <code>SIGINT</code> 信号令其终止运行（<code>SIGINT</code>信号代表键盘发送的终止信号 ctrl-C ， <code>ping</code> 命令接收到此信号后会正常退出并打印统计信息） <code>kill -s SIGINT 9509</code> ，最终在运行容器的控制台，我们看到的输出类似下面这样</p>
+<pre><code class="shell"># docker run --rm --entrypoint ping alpine localhost
+PING localhost (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: seq=0 ttl=64 time=0.032 ms
+…… 忽略中间日志 ……
+64 bytes from 127.0.0.1: seq=26 ttl=64 time=0.046 ms
+
+--- localhost ping statistics ---
+27 packets transmitted, 27 packets received, 0% packet loss
+round-trip min/avg/max = 0.032/0.046/0.065 ms</code></pre>
+<p>说明容器中的 <code>ping</code> 进程确实是接收到 <code>SIGINT</code> 信号正常终止了。并且此时再次运行 <code>docker ps</code> 是看不到这个容器的，说明<strong>容器根进程结束运行的话，容器也会终止运行</strong>。</p>
+<blockquote>
+<p>以上现象也能解释为什么容器的启动命令不能用 <code>nohup</code> 等形式将应用服务进程作为后台运行 —— 如果应用服务的进程不是作为主进程运行在前台，那么容器就会因为根进程执行完成而结束运行。</p>
+</blockquote>
+<h2 id="docker-stop-和-docker-kill"><a href="#docker-stop-和-docker-kill" class="headerlink" title="docker stop 和 docker kill"></a>docker stop 和 docker kill</h2><p><code>docker stop</code> 命令和 <code>docker kill</code> 命令都可以用于终止正在运行的 docker 容器。差别在于， <code>docker stop</code> 默认会先发送一个 <code>SIGTERM</code> 信号给容器内的根进程，如果一段时间内容器没有结束运行（默认10秒），则再向容器发送一个 <code>SIGKILL</code> 将容器根进程强制结束。而 <code>docker kill</code> 是默认直接给容器内的根进程发送一个 <code>SIGKILL</code> 信号，类似于 <code>kill -9</code> 强杀进程。</p>
+<p>两者的设计目的并不相同， <code>docker stop</code> 主要是为了优雅停止容器的运行。它的选项 <code>--time , -t</code> 表示在强制杀进程之前等待多少秒。<br>而 <code>docker kill</code> 跟 Linux 的 <code>kill</code> 命令一样，可以用来给容器内的根进程发送进程信号。具体的信号内容通过参数 <code>--signal , -s</code> 来指定，参数值可以是<em>信号名</em>或者是它的<em>数字编号</em>。</p>
+<p>需要注意的是，<strong>容器只把进程信号发送给它的根进程</strong>。这也比较容易理解，Linux宿主机上也是由 PID=1 的根进程负责处理宿主机上的进程结束工作。容器的 PID namespace 与此类似， docker 也只会把外来的进程信号传递给 PID=1 的进程，这个进程再来决定信号该如何处理。</p>
+<blockquote>
+<p>PID1进程对于操作系统而言具有特殊意义。操作系统的PID1进程是init进程，以守护进程方式运行，是所有其他进程的祖先，具有完整的进程生命周期管理能力。在Docker容器中，PID1进程是启动进程，它也会负责容器内部进程管理的工作。而这也将导致进程管理在Docker容器内部和完整操作系统上的不同。<br>—— <a href="https://www.cnblogs.com/ilinuxer/p/6188303.html" target="_blank" rel="noopener" title="理解Docker容器的进程管理">理解Docker容器的进程管理</a></p>
+</blockquote>
+<h2 id="正确编写启动脚本确保容器优雅退出"><a href="#正确编写启动脚本确保容器优雅退出" class="headerlink" title="正确编写启动脚本确保容器优雅退出"></a>正确编写启动脚本确保容器优雅退出</h2><p>让我们首先来看这样一个启动脚本：</p>
+<pre><code class="shell">#!/bin/sh
+
+ping localhost</code></pre>
+<p>Dockerfile 如下：</p>
+<pre><code class="shell">FROM openjdk:8-alpine
+
+WORKDIR /home
+
+COPY start.sh .
+
+ENTRYPOINT [&quot;sh&quot;, &quot;./start.sh&quot;]</code></pre>
+<p>打包为 test 镜像，执行 <code>docker run --rm test</code> 启动 test 镜像。此时如果使用 <code>docker kill -s SIGINT &lt;container_id&gt;</code> 以向容器内发送 <code>ctrl+C</code> ，能否触发 <code>ping</code> 进程打印统计信息并终止运行呢？</p>
+<p>实际实验的结果是，不行。<br>查看容器内的进程情况，我们可以看到 PID=1 的进程是 <code>sh ./start.sh</code>，而 <code>ping localhost</code> 进程是它的子进程：</p>
+<pre><code class="shell"># docker exec ed882 ps -o pid,ppid,user,args
+PID   PPID  USER     COMMAND
+    1     0 root     sh ./start.sh
+    8     1 root     ping localhost
+    9     0 root     ps -o pid,ppid,user,args</code></pre>
+<p>很明显， <code>ping localhost</code> 进程不是容器的根进程，我们发送的 <code>SIGINT</code> 信号只会被 <code>sh ./start.sh</code> 进程接收，但它又不会将信号转发给 <code>ping localhost</code> 进程，于是 <code>SIGINT</code> 信号就这么被忽略了，好像什么都没发生过。</p>
+<p>解决这个问题的方式通常是确保容器内的业务进程是容器的根进程（docker部署方式推荐一个容器一个业务进程，所以尽量避免将多个业务部署在同一个容器中），为此，需要修改启动脚本：</p>
+<pre><code class="shell">#!/bin/sh
+
+exec ping localhost # 注意这一行的变化</code></pre>
+<p><code>exec</code> 命令用于运行指定的命令，并以此命令的运行进程替换掉当前进程，继承当前进程的 PID。直观地说，运行上面的启动脚本时，当执行到 <code>exec ping localhost</code> ， <code>ping localhost</code> 进程将会取代 <code>sh ./start.sh</code> 进程在进程树中的位置，并沿用 <code>sh ./start.sh</code> 进程的 PID，也就是变成容器内的根进程了。</p>
+<p>重新打个 test 镜像包试一下：</p>
+<pre><code class="shell"># docker ps
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                    NAMES
+71cde237ce32        test                &quot;sh ./start.sh&quot;     10 seconds ago      Up 9 seconds                                 confident_mcclintock
+
+# docker exec 71cde cat /home/start.sh
+#!/bin/sh
+
+exec ping localhost
+
+# docker exec 71cde ps -o pid,ppid,user,args
+PID   PPID  USER     COMMAND
+    1     0 root     ping localhost
+   15     0 root     ps -o pid,ppid,user,args</code></pre>
+<p>现在 <code>ping localhost</code> 是容器的根进程了。运行一下 <code>docker kill -s 2 71cde</code>，容器立即结束运行，并且打出了数据包统计信息，说明它确实是接收到 <code>SIGINT</code> 信号退出的。控制台输出如下：</p>
+<pre><code class="shell"># docker run --rm test
+PING localhost (127.0.0.1): 56 data bytes
+64 bytes from 127.0.0.1: seq=0 ttl=64 time=0.029 ms
+64 bytes from 127.0.0.1: seq=1 ttl=64 time=0.044 ms
+64 bytes from 127.0.0.1: seq=2 ttl=64 time=0.047 ms
+…… 忽略中间输出 ……
+64 bytes from 127.0.0.1: seq=85 ttl=64 time=0.046 ms
+
+--- localhost ping statistics ---
+86 packets transmitted, 86 packets received, 0% packet loss
+round-trip min/avg/max = 0.029/0.047/0.061 ms</code></pre>
+<blockquote>
+<p>上文演示的是 <code>docker kill</code> 发送信号，但 <code>docker stop</code> 优雅退出容器的逻辑也是一样的。</p>
+</blockquote>
+<p>这一点在实际的业务系统运行中也是有重要意义的。通常业务进程在结束运行前有些收尾的事情要做，比如需要确保写文件都结束，网络服务器还要保证自己处理中的业务请求都处理完成，在此过程中还不能接收新的请求。这些都要求容器内的业务进程能感知到容器将要退出运行才行。<br>所以我们在打包镜像的时候需要注意，<strong>要么在 Dockerfile 中直接启动业务进程，如果要以启动脚本拉起业务进程，需要在脚本内以 <code>exec</code> 命令启动业务。</strong></p>
+<p>举个实际的例子， Java-Chassis 框架基于 JVM shutdown hook 实现了微服务进程的<a href="https://docs.servicecomb.io/java-chassis/zh_CN/general-development/shutdown/" target="_blank" rel="noopener" title="Java-Chassis 优雅停机">优雅停机</a>功能。该功能使得 Java-Chassis 可以在微服务进程退出时执行等待处理中的业务请求执行完成、返回 503 状态码拒绝新请求、注销微服务实例等一系列操作，这些操作可以尽量确保业务请求不受损，使 consumer 端能尽快感知到 provider 微服务实例的下线操作。用户也可以通过 <code>BootListener</code> 接口监听 <code>BEFORE_CLOSE</code> 事件来完成自定义的一些清理操作。</p>
+<p><strong>而要确保 Java-Chassis 的优雅停机功能在容器化部署场景下正常工作，就需要用户基于上述内容调整业务进程启动方式，使得业务进程是容器内的根进程。</strong></p>
+<p>当然 Java-Chassis 的优雅停机操作仍然只是尽力保护业务请求不受损（配合 Java-Chassis 的<a href="https://docs.servicecomb.io/java-chassis/zh_CN/references-handlers/loadbalance/#_5" target="_blank" rel="noopener" title="Java-Chassis 实例隔离">实例隔离</a>和<a href="https://docs.servicecomb.io/java-chassis/zh_CN/references-handlers/loadbalance/#_7" target="_blank" rel="noopener" title="Java-Chassis 重试策略">重试策略</a>）。 Java-Chassis 默认的重试策略是 <code>tryOnSame=0,tryOnNext=1</code> ，因此只能保证 provider 端实例一个接一个下线时业务调用不受损，而且要求实例下线的时间间隔要大于 consumer 端的 instance pull 时间间隔。否则 consumer 端本地缓存的 provider 实例列表中实际已下线的实例数大于1，就有可能造成请求路由给一个已下线的实例，又重试到另一个已下线的实例的情况，最终导致业务请求失败。</p>
+<p>要从理论上保证实例缩容、滚动升级等涉及 provider 端实例下线的场景中微服务业务调用不受损，最好是在部署系统下线微服务实例之前将对应的实例记录状态置为不可用，让 consumer 端微服务从服务中心感知到实例状态变化后再真正下线对应的实例。但 ServiceComb 本身并没有对用户的部署方式做假设，让部署系统和服务中心联动起来也并不是一件简单的事情。 为了能以尽可能低的成本达到类似的效果， Java-Chassis 框架在新版本引入了退出前将本实例置为 <code>DOWN</code> 状态并阻塞等待的机制。<br>此机制默认不开启，配置 <code>servicecomb.boot.turnDown.waitInSeconds</code> 设置阻塞等待时间大于零即可启用。当 JVM 触发 shutdown hook 运行时，该功能会向服务中心发请求将本实例的状态置为 <code>DOWN</code>，并根据用户配置的阻塞时长进行等待。在此期间， shutdown hook 的运行线程是被阻塞住的，因此 JVM 还不会退出，微服务业务还能继续处理请求。阻塞完成后 JVM shutdown hook 逻辑放通继续执行，微服务真正退出。在阻塞的这一段时间里， consumer 端微服务就能够从服务中心查询到即将下线的 provider 实例状态变为不可用了，于是业务流量便提前绕过此实例，从根源上避免了业务调用失败。<br>使用此功能还需要部署系统给予业务服务足够的退出时间，这可能需要用户根据 consumer 端的 instance pull 时间间隔进行设置，以确保 docker / K8s 等部署运行系统不会提前强制结束进程。</p>
+<blockquote>
+<p>该功能的代码在 <code>SCBEngine#blockShutDownOperationForConsumerRefresh</code> 方法中。</p>
+</blockquote>
+<h2 id="补充说明"><a href="#补充说明" class="headerlink" title="补充说明"></a>补充说明</h2><p>在 docker 文档 <a href="https://docs.docker.com/engine/reference/commandline/kill/" target="_blank" rel="noopener" title="docker kill | Docker Documentation">docker kill</a> 中有说明如果 <code>ENTRYPOINT</code> 和 <code>CMD</code> 是以 shell 风格书写的，会导致启动命令以 <code>/bin/sh -c</code> 方式运行，是 <code>sh</code> 进程的子进程，无法获得信号。但笔者在实测时发现即使以 shell 风格书写 Dockerfile 中的启动命令， <code>docker history</code> 查看镜像分层看到的也确实是 <code>ENTRYPOINT [&quot;/bin/sh&quot; &quot;-c&quot; &quot;sh ./start.sh&quot;]</code> ，启动容器后仍然能看到启动脚本中拉起的业务进程的 PID=1 （前提条件是启动脚本以 <code>exec</code> 命令运行业务）。推测是内核或者 docker 版本不同导致与文档所描述的行为不同。<br>即使如此，书写 Dockerfile 时仍然建议遵循 exec 风格。（见<a href="/2020/08/20/docker-entrypoint-and-cmd/" title="Dockerfile 中的 ENTRYPOINT 和 CMD">上一篇博客</a>的描述）</p>
+<h2 id="扩展阅读"><a href="#扩展阅读" class="headerlink" title="扩展阅读"></a>扩展阅读</h2><ul>
+<li><a href="https://docs.docker.com/engine/reference/commandline/kill/" target="_blank" rel="noopener" title="docker kill | Docker Documentation">docker kill 官方文档</a></li>
+<li><a href="https://docs.docker.com/engine/reference/commandline/stop/" target="_blank" rel="noopener" title="docker stop | Docker Documentation">docker stop 官方文档</a></li>
+<li><a href="https://www.cnblogs.com/ilinuxer/p/6188303.html" target="_blank" rel="noopener" title="理解Docker容器的进程管理">理解Docker容器的进程管理</a></li>
+<li><a href="https://docs.servicecomb.io/java-chassis/zh_CN/general-development/shutdown/" target="_blank" rel="noopener" title="Java-Chassis 优雅停机">优雅停机</a></li>
+</ul>
+<h2 id="本文验证环境"><a href="#本文验证环境" class="headerlink" title="本文验证环境"></a>本文验证环境</h2><p>同<a href="/2020/08/20/docker-entrypoint-and-cmd/" title="Dockerfile 中的 ENTRYPOINT 和 CMD">Dockerfile 中的 ENTRYPOINT 和 CMD</a>。</p>
+
+            <hr>
+          </div>
+          <br>
+          <div>
+            <p>
+            
+              <span>
+                <i class="iconfont icon-inbox"></i>
+                
+                  <a class="hover-with-bg" href="/categories/%E8%BD%AF%E4%BB%B6%E6%8A%80%E6%9C%AF">软件技术</a>
+                  &nbsp;
+                
+              </span>&nbsp;&nbsp;
+            
+            
+              <span>
+                <i class="iconfont icon-tag"></i>
+                
+                  <a class="hover-with-bg" href="/tags/ServiceComb-Java-Chassis">ServiceComb-Java-Chassis</a>
+                
+                  <a class="hover-with-bg" href="/tags/docker">docker</a>
+                
+              </span>
+            
+            </p>
+            
+              <p class="note note-warning">本博客所有文章除特别声明外，均采用 <a href="https://zh.wikipedia.org/wiki/Wikipedia:CC_BY-SA_3.0%E5%8D%8F%E8%AE%AE%E6%96%87%E6%9C%AC" target="_blank" rel="nofollow noopener noopener">CC BY-SA 3.0协议</a> 。转载请注明出处！</p>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="d-none d-lg-block col-lg-2 toc-container">
+      
+  <div id="toc">
+    <p class="h4"><i class="far fa-list-alt"></i>&nbsp;目录</p>
+    <div id="tocbot"></div>
+  </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- custom -->
+
+
+<!-- Comments -->
+<div class="col-lg-7 mx-auto nopadding-md">
+  <div class="container comments mx-auto" id="comments">
+    
+  </div>
+</div>
+
+    
+  </main>
+
+  
+    <a class="z-depth-1" id="scroll-top-button" href="#" role="button">
+      <i class="fa fa-chevron-up scroll-top-arrow" aria-hidden="true"></i>
+    </a>
+  
+
+  
+    <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+  
+
+  <footer class="mt-5">
+  <div class="text-center py-3">
+    <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><b>Hexo</b></a>
+    <i class="iconfont icon-love"></i>
+    <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"> <b>Fluid</b></a>
+    <br>
+
+    
+  
+    <!-- 不蒜子统计PV -->
+    
+    &nbsp;<span id="busuanzi_container_site_pv">总访问量 
+          <span id="busuanzi_value_site_pv"></span> 次</span>&nbsp;
+  
+  
+    <!-- 不蒜子统计UV -->
+    
+    &nbsp;<span id="busuanzi_container_site_uv">总访客数 
+            <span id="busuanzi_value_site_uv"></span> 人</span>&nbsp;
+  
+  <br>
+
+
+
+    
+
+  </div>
+</footer>
+
+<!-- SCRIPTS -->
+<script src="https://cdn.staticfile.org/jquery/3.4.1/jquery.min.js" ></script>
+<script src="https://cdn.staticfile.org/popper.js/1.15.0/umd/popper.min.js" ></script>
+<script src="https://cdn.staticfile.org/twitter-bootstrap/4.3.1/js/bootstrap.min.js" ></script>
+<script src="https://cdn.staticfile.org/mdbootstrap/4.8.9/js/mdb.min.js" ></script>
+<script src="/js/main.js" ></script>
+
+
+  <script src="/js/lazyload.js" ></script>
+
+
+
+  
+    <script src="https://cdn.staticfile.org/tocbot/4.8.0/tocbot.min.js" ></script>
+  
+  <script src="/js/post.js" ></script>
+
+
+
+  <script src="https://cdn.staticfile.org/smooth-scroll/16.1.0/smooth-scroll.min.js" ></script>
+
+
+
+  <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js" ></script>
+
+
+<!-- Plugins -->
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+  <script src="https://cdn.staticfile.org/prettify/r298/prettify.min.js" ></script>
+  <script>
+    $(document).ready(function () {
+      $('pre').addClass('prettyprint  linenums');
+      prettyPrint();
+    })
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/typed.js/2.0.10/typed.min.js" ></script>
+  <script>
+    var typed = new Typed('#subtitle', {
+      strings: [
+        '  ',
+        "Docker 容器终止运行方式小记&nbsp;",
+      ],
+      cursorChar: "_",
+      typeSpeed: 70,
+      loop: false,
+    });
+    typed.stop();
+    $(document).ready(function () {
+      $(".typed-cursor").addClass("h2");
+      typed.start();
+    });
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/anchor-js/4.2.0/anchor.min.js" ></script>
+  <script>
+    anchors.options = {
+      placement: "left",
+      visible: "false",
+      
+    };
+    var el = "h1,h2,h3,h4,h5,h6".split(",");
+    var res = [];
+    for (item of el) {
+      res.push(".markdown-body > " + item)
+    }
+    anchors.add(res.join(", "))
+  </script>
+
+
+
+  <script src="/js/local-search.js" ></script>
+  <script>
+    var path = "/local-search.xml";
+    var inputArea = document.querySelector("#local-search-input");
+    inputArea.onclick = function () {
+      getSearchFile(path);
+      this.onclick = null
+    }
+  </script>
+
+
+
+  <script src="https://cdn.staticfile.org/fancybox/3.5.7/jquery.fancybox.min.js" ></script>
+  <script>
+    $("#post img:not(.no-zoom img, img[no-zoom])").each(
+      function () {
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "images");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      }
+    );
+  </script>
+
+
+
+
+
+
+
+</body>
+</html>

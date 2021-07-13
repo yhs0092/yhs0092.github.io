@@ -1,0 +1,43 @@
+---
+title: 定制ClassLoader实现类加载隔离的效果
+date: 2021-07-13 21:45:18
+tags: [java, Spring]
+keywords: [Java, ClassLoader, Spring]
+categories:
+- 软件技术
+---
+
+从使用角度, 简要说明类加载机制以及自定义ClassLoader隔离依赖的方法.
+<!-- more -->
+# 定制ClassLoader实现类加载隔离的效果
+
+今天有业务开发同事找我咨询一个依赖冲突的问题如何解决. 两人商量过后觉得, 自定义一个ClassLoader做类隔离, 应该能比较好地达到他想要的效果. 而这个特性点我又觉得比较有意思, 于是我花了半天时间写了一个demo给他, 完工之后又觉得得再留一篇博客才算圆满, 于是有了本文 : )
+
+## 业务背景
+
+业务A引用的B组件间接依赖了C组件, 而业务自身的代码也直接依赖C组件, 两边依赖的B组件版本不一致, 有类冲突. 为了降低后续维护成本, 修改B和C的源码进行定制的方案被我们pass了, 能想到的另一个解决方式就是用一个独立的ClassLoader来加载B和C组件, 使之与业务A自身所在的ClassLoader隔离开来, 以解决类冲突问题.
+
+## 背景知识
+
+### 类加载过程
+
+类加载过程大致分为如下步骤:
+- 加载
+- 链接
+  + 验证
+  + 准备
+  + 解析
+- 初始化
+
+因为我不想背面经, 而且这一块对于我即将要解决的问题影响不大, 我就不细说了. 想要深入了解的同学可以自行搜索, 或者直接看[JVM文档](https://docs.oracle.com/javase/specs/jvms/se8/html/jvms-5.html "The Java® Virtual Machine Specification~Java SE 8 Edition~Chapter 5. Loading, Linking, and Initializing").
+
+### 双亲委派
+
+ClassLoader之间是类似于树状的结构, 大部分ClassLoader都有一个父ClassLoader, JVM触发`ClassLoader#loadClass`方法时, ClassLoader会首先委托父ClassLoader加载类, 如果父ClassLoader加载不到再调用自己的`findClass`方法加载, 这便是双亲委派的基本规则.
+假设A组件在ClassLoaderA中加载, B组件在ClassLoaderB中加载, ClassLoaderB的parent是ClassLoaderA, 那么按照双亲委派机制, B组件引用C组件时, ClassLoaderB会委托ClassLoaderA加载C的类, 因此在双亲委派规则下, 无法解决C组件的版本冲突问题. 要解决这个问题, 需要覆写ClassLoaderB的`loadClass`方法, 让ClassLoaderB自行加载C的类, 此时才能让ClassLoaderA和ClassLoaderB分别加载不同版本的C组件, 让A和B都能用到适合自己的C组件.
+
+### JVM使用哪个ClassLoader加载类
+
+这里我将类加载的触发方式分为两种:
+
+- 一种是主动调用`ClassLoader#loadClass`或者`Class#forName`加载类. 这种方式
